@@ -54,17 +54,53 @@ computes them; if you type numbers into those columns directly, whatever you
 type is used as-is. Any job with green waste shows "+ green waste" next to
 its task description throughout the dashboard so it's visible at a glance.
 
+## Home tab
+
+New landing screen (it's what you see when you sign in) with a snapshot of
+the business:
+
+- **All-time revenue** and **all-time profit** — revenue counts every
+  completed job's billed amount, starting from `business_settings
+.starting_revenue` (currently £3,518, from before this dashboard existed —
+  edit that number directly in Supabase if it ever needs correcting). Profit
+  is revenue minus what students were paid for that work, minus expenses
+  (below). Booked-but-not-done jobs don't count yet — only work that's
+  actually happened.
+- **Hours booked this week**, with a green ▲ or red ▼ percentage above it
+  comparing to last week's hours (Monday-Sunday either side of today) — this
+  counts booked and completed jobs both, since it's about how busy the week
+  is, not just finished work.
+- **A "this week" strip** — the 7 days of the current week at a glance, each
+  showing job count and hours; click a day to jump straight to it on the full
+  calendar.
+- **Expenses** — press **+ Add expense** to log either a one-off cost (a new
+  strimmer, a one-time fee) or a monthly one (insurance, a subscription — a
+  direct debit that repeats). One-off expenses subtract once, on their date.
+  Monthly ones keep accruing against profit once a month from their start
+  date onwards until you press **Stop** on them (which records when it
+  stopped, rather than deleting it, so past months it actually cost you still
+  count) — **Delete** is there separately for correcting a mistake, on either
+  kind.
+
+This lives in a new `expenses` table (`description`, `amount`, `type`
+— `one_off` or `monthly` —, `date`, `ended_date`), behind the same
+admin-only row-level security as everything else.
+
 ## What changed in the database
 
 I added columns to the existing tables (nothing was removed or renamed, so the
 employee app keeps working exactly as before):
 
-- **employees**: `course`, `started_date`, `bank_name`, `bank_last4`
+- **employees**: `course`, `started_date`, `bank_name`, `bank_last4`, `bank_sort_code`, `bank_account_number`
 - **clients**: `source`, `handed_over_date`, `first_booking_date`, `last_nudged_at`
 - **jobs**: `task_label`, `photos_count`, `review_status`, `payment_id`, `paid`
 - **payments**: `top_up`, `reference`
 - **business_settings**: `green_waste_charge` (£10), `green_waste_pay` (£8),
-  `bank_display` (the "Pay from" label text)
+  `bank_display` (the "Pay from" label text) — `starting_revenue` and
+  `starting_date` already existed on this table and are now used, as the
+  Home tab's revenue baseline
+- **expenses** (new table): `description`, `amount`, `type` (`one_off` /
+  `monthly`), `date`, `ended_date` — see "Home tab" above
 
 **`jobs.status` itself was NOT changed** — I tried that in an earlier version
 (changing it to `booked`/`done`/`paid`) and it broke the employee app, which
@@ -95,14 +131,32 @@ it's unused now the pay model is flat, harmless to ignore or delete.
 New columns are all nullable/defaulted, so existing rows didn't need
 backfilling — they'll just show blanks (e.g. "no bank on file") until filled in.
 
+## Paying employees — bank details right where you need them
+
+The payment run's "Mark as paid" button only ever marks jobs as paid in the
+dashboard (see above) — it doesn't move any money. Instead, the last step of
+the payment run ("Send it") shows exactly what you need to pay each student
+manually from your own banking app: their name, sort code, account number,
+and the amount, all in one card on the right. Work down the list paying each
+one the normal way you already do, then press "Mark as paid" once you're
+done, to record it here.
+
+For those details to show up, each student needs their sort code and account
+number saved once on their Students page (a "Bank details" panel there) —
+only the last 4 digits are shown anywhere else in the dashboard; the full
+details are only ever read to display them on the Send step. If anyone's
+missing them, that shows up right in their row on the Send step instead of
+their bank details, so it's obvious before you start paying.
+
 ## Things that are deliberately not real yet
 
-- **No live bank transfer, and no separate bookkeeping row either.** "Send £X" in
-  the payment run just flips those jobs' `paid` flag to true — it doesn't move
-  money via Starling/SumUp, and (as of this version) it doesn't write anything to
-  the `payments` table either, since that's not something you need tracked. You
-  still send the actual payment yourself; this just marks the jobs as settled so
-  they drop off "to pay" and stop showing up as owed.
+- **No live bank transfer, and no separate bookkeeping row either.** "Mark as
+  paid" in the payment run just flips those jobs' `paid` flag to true — it
+  doesn't move any money, and doesn't write anything to the `payments` table
+  either, since that's not something you need tracked. You still pay everyone
+  yourself from your own banking app (using the details shown on the Send
+  step); this just marks the jobs as settled so they drop off "to pay" and
+  stop showing up as owed.
 - **If a payment run ever does fail** (e.g. a login session expiring), you'll see
   a banner across the top of the page saying "That didn't save: …" — dismiss it
   with the ✕, sort out whatever it says, and try Send again. It won't silently
@@ -136,9 +190,9 @@ backfilling — they'll just show blanks (e.g. "no bank on file") until filled i
 Everything sits in one folder next to `index.html`:
 
 - `index.html` — entry point
-- `main.js` boots the app, `app.js` is the router + event handling, `calendar.js` /
-  `handovers.js` / `jobs.js` / `payments.js` / `students.js` / `homeowners.js` are the
-  six screens, `db.js` / `derive.js` hold the Supabase queries and money-rule
-  calculations
+- `main.js` boots the app, `app.js` is the router + event handling, `home.js` /
+  `calendar.js` / `handovers.js` / `jobs.js` / `payments.js` / `students.js` /
+  `homeowners.js` are the seven screens, `db.js` / `derive.js` hold the Supabase
+  queries and money-rule calculations
 - `modernist.css` — the design system stylesheet, copied over unchanged
 - `logo-green.png` / `logo-cream.png` — logo files from the handoff

@@ -106,6 +106,18 @@ function studentDetail(state) {
             <div style="font-size:11px;color:var(--color-neutral-700)">${s.jobsToDate} jobs${e.started_date ? ' since ' + e.started_date : ''}</div>
           </div>
         </section>
+        <section>
+          <div style="border-bottom:2px solid var(--color-divider);padding-bottom:6px;margin-bottom:6px"><h2 style="font-size:17px;margin:0">Bank details</h2></div>
+          <div style="border:2px solid var(--color-divider);padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div class="field" style="flex:1 1 120px"><label>Bank name</label><input class="input" id="bank-name-${e.id}" value="${escapeHtml(e.bank_name || '')}" placeholder="e.g. Monzo"></div>
+              <div class="field" style="flex:1 1 90px"><label>Sort code</label><input class="input" id="bank-sort-${e.id}" value="${escapeHtml(e.bank_sort_code || '')}" placeholder="00-00-00"></div>
+              <div class="field" style="flex:1 1 130px"><label>Account number</label><input class="input" id="bank-acct-${e.id}" value="${escapeHtml(e.bank_account_number || '')}" placeholder="00000000"></div>
+            </div>
+            <button class="btn btn-secondary" style="align-self:flex-start" data-act="save-bank" data-id="${e.id}">Save bank details</button>
+            <p style="font-size:11px;color:var(--color-neutral-700);margin:0">Only used to build the payment file in the payment run — everywhere else in the dashboard just shows the last 4 digits.</p>
+          </div>
+        </section>
       </div>
     </div>`;
 }

@@ -1,7 +1,8 @@
-import { fetchAll, markJobDone, setReview, confirmAll as dbConfirmAll, nudgeHandover, sendPaymentRun } from './db.js';
-import { enrichJobs, owedSummary } from './derive.js';
+import { fetchAll, markJobDone, setReview, confirmAll as dbConfirmAll, nudgeHandover, sendPaymentRun, updateEmployeeBank, addExpense, stopExpense, deleteExpense } from './db.js';
+import { enrichJobs, owedSummary, paymentGroups } from './derive.js';
 import { state, setState, goScreen } from './state.js';
 import { renderLeftRail, renderRightRail } from './rails.js';
+import { renderHome } from './home.js';
 import { renderCalendar } from './calendar.js';
 import { renderHandovers } from './handovers.js';
 import { renderJobs } from './jobs.js';
@@ -9,7 +10,7 @@ import { renderPayments } from './payments.js';
 import { renderStudents } from './students.js';
 import { renderHomeowners } from './homeowners.js';
 import { signOut } from './auth.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, toDate } from './utils.js';
 
 const root = document.getElementById('app');
 
@@ -36,9 +37,9 @@ async function refresh() {
 
 function onHashChange() {
   const m = location.hash.match(/^#\/(\w+)/);
-  const screen = m ? m[1] : 'calendar';
-  const valid = ['calendar', 'handovers', 'jobs', 'payments', 'students', 'homeowners'];
-  setState({ screen: valid.includes(screen) ? screen : 'calendar' });
+  const screen = m ? m[1] : 'home';
+  const valid = ['home', 'calendar', 'handovers', 'jobs', 'payments', 'students', 'homeowners'];
+  setState({ screen: valid.includes(screen) ? screen : 'home' });
   render();
 }
 
@@ -59,6 +60,7 @@ function render() {
   const selStart = active && 'selectionStart' in active ? active.selectionStart : null;
 
   const centre = {
+    home: renderHome,
     calendar: renderCalendar,
     handovers: renderHandovers,
     jobs: renderJobs,
@@ -193,24 +195,27 @@ function onClick(e) {
     }
     case 'send-payment': {
       const owed = owedSummary(jobs());
-      const byEmp = {};
-      for (const j of owed.jobs) (byEmp[j.employee_id] ||= []).push(j.id);
-      const payRowsForSend = Object.entries(byEmp).map(([employeeId, jobIds]) => ({
-        employeeId,
-        jobIds,
-        pay: owed.jobs.filter((j) => j.employee_id === employeeId).reduce((s, j) => s + j.pay, 0) + (state.topUps[employeeId] || 0),
-      }));
-      if (!payRowsForSend.length) break;
+      const groups = paymentGroups(owed.jobs, state.topUps);
+      if (!groups.length) break;
       const snapshot = {
-        total: payRowsForSend.reduce((s, r) => s + r.pay, 0),
-        students: payRowsForSend.length,
+        total: groups.reduce((s, g) => s + g.pay, 0),
+        students: groups.length,
       };
+      const jobRows = groups.map((g) => ({ jobIds: g.jobs.map((j) => j.id) }));
       withRefresh(async () => {
         // Just flips the relevant jobs to paid — no separate payments-table
         // bookkeeping row, so there's nothing else here that can fail.
-        await sendPaymentRun(payRowsForSend);
+        await sendPaymentRun(jobRows);
         setState({ paid: true, topUps: {}, sentSnapshot: snapshot });
       });
+      break;
+    }
+    case 'save-bank': {
+      const id = t.dataset.id;
+      const bank_name = document.getElementById(`bank-name-${id}`)?.value.trim() || null;
+      const bank_sort_code = document.getElementById(`bank-sort-${id}`)?.value.trim() || null;
+      const bank_account_number = document.getElementById(`bank-acct-${id}`)?.value.trim() || null;
+      withRefresh(() => updateEmployeeBank(id, { bank_name, bank_sort_code, bank_account_number }));
       break;
     }
     case 'pay-done':
@@ -237,6 +242,37 @@ function onClick(e) {
     case 'dismiss-error':
       setState({ actionError: null });
       render();
+      break;
+    case 'home-open-day': {
+      const d = toDate(t.dataset.date);
+      setState({ dayKey: t.dataset.date, calYear: d.getFullYear(), calMonth0: d.getMonth() });
+      goScreen('calendar');
+      render();
+      break;
+    }
+    case 'toggle-expense-form':
+      setState({ showExpenseForm: !state.showExpenseForm });
+      render();
+      break;
+    case 'add-expense': {
+      const description = document.getElementById('expense-desc')?.value.trim();
+      const amount = Number(document.getElementById('expense-amount')?.value);
+      const type = document.getElementById('expense-type')?.value;
+      const date = document.getElementById('expense-date')?.value;
+      if (!description || !(amount > 0) || !date) {
+        setState({ actionError: 'Fill in a description, an amount above £0, and a date before adding an expense.' });
+        render();
+        break;
+      }
+      setState({ showExpenseForm: false });
+      withRefresh(() => addExpense({ description, amount, type, date }));
+      break;
+    }
+    case 'stop-expense':
+      withRefresh(() => stopExpense(t.dataset.id));
+      break;
+    case 'delete-expense':
+      withRefresh(() => deleteExpense(t.dataset.id));
       break;
     default:
       break;

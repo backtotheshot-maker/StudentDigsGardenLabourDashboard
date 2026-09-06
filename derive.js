@@ -2,7 +2,7 @@
 // instead of poking at raw rows, so the money/status rules live in one place.
 
 import { computeJobMoney } from './db.js';
-import { isoDate, dowMon0 } from './utils.js';
+import { isoDate, dowMon0, toDate } from './utils.js';
 
 export function indexById(rows) {
   const m = {};
@@ -45,6 +45,22 @@ export function owedSummary(jobs) {
   const pay = payable.reduce((s, j) => s + j.pay, 0);
   const students = new Set(payable.map((j) => j.employee_id));
   return { pay, count: payable.length, students: students.size, jobs: payable };
+}
+
+// Groups already-payable jobs (i.e. owedSummary(jobs).jobs) by employee, with
+// any top-up folded into `pay`. Shared by the payments screen (what's shown)
+// and app.js (what's sent/exported), so both always agree on who's being paid
+// and for how much.
+export function paymentGroups(payableJobs, topUps = {}) {
+  const byEmp = {};
+  for (const j of payableJobs) (byEmp[j.employee_id] ||= { employee: j.employee, jobs: [] }).jobs.push(j);
+  return Object.values(byEmp)
+    .filter((g) => g.employee)
+    .map((g) => {
+      const basePay = g.jobs.reduce((s, j) => s + j.pay, 0);
+      const topUp = topUps[g.employee.id] || 0;
+      return { employee: g.employee, jobs: g.jobs, pay: basePay + topUp, topUp };
+    });
 }
 
 export function handoverList(db) {
@@ -113,4 +129,63 @@ function withinNextWeek(dateIso) {
   today.setHours(0, 0, 0, 0);
   const diff = (d - today) / 86400000;
   return diff >= 0 && diff < 7;
+}
+
+// ---- home / analytics ---------------------------------------------------
+
+// Mon-Sun range for "this week" (offsetWeeks 0) or a week either side of it.
+export function weekRange(offsetWeeks = 0) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dowMon0(today) + offsetWeeks * 7);
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+  return { start: isoDate(monday), end: isoDate(days[6]), days };
+}
+
+export function hoursInRange(jobs, startIso, endIso) {
+  return jobs.filter((j) => j.date >= startIso && j.date <= endIso).reduce((s, j) => s + j.hours, 0);
+}
+
+// How many monthly charges have fallen between a start date and an end date
+// (inclusive of the start date's month, exclusive of a charge day not yet
+// reached in the end month) — e.g. started 15 Jan, checked on 10 Mar -> 2
+// (Jan, Feb charges have happened; March's hasn't hit the 15th yet).
+export function monthsElapsed(fromIso, toIso) {
+  const from = toDate(fromIso);
+  const to = toDate(toIso);
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) + 1;
+  if (to.getDate() < from.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+// All-time revenue/profit, plus the current monthly expense run-rate. Revenue
+// is recognised when a job is completed (whether or not it's been paid out
+// yet), starting from business_settings.starting_revenue as the baseline for
+// work done before this dashboard existed.
+export function financeSummary(db, jobs) {
+  const completed = jobs.filter((j) => j.status === 'completed');
+  const revenue = Number(db.settings.starting_revenue || 0) + completed.reduce((s, j) => s + j.billed, 0);
+  const payCosts = completed.reduce((s, j) => s + j.pay, 0);
+
+  const todayIso = isoDate(new Date());
+  let oneOffTotal = 0, monthlyAccrued = 0, monthlyRunRate = 0;
+  for (const e of db.expenses || []) {
+    const amount = Number(e.amount || 0);
+    if (e.type === 'one_off') {
+      oneOffTotal += amount;
+    } else {
+      const endIso = e.ended_date || todayIso;
+      monthlyAccrued += monthsElapsed(e.date, endIso) * amount;
+      if (!e.ended_date) monthlyRunRate += amount;
+    }
+  }
+
+  const expensesTotal = oneOffTotal + monthlyAccrued;
+  const profit = revenue - payCosts - expensesTotal;
+  return { revenue, payCosts, oneOffTotal, monthlyAccrued, expensesTotal, monthlyRunRate, profit };
 }

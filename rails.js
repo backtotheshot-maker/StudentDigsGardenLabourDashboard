@@ -2,6 +2,7 @@ import { money, hours, dayLabel, fmtTime, tagStyle, statusTone, escapeHtml, work
 import { enrichJobs, handoverList, owedSummary, jobsOnDate, jobsInMonth } from './derive.js';
 
 const NAV = [
+  { screen: 'home', label: 'Home' },
   { screen: 'calendar', label: 'Calendar' },
   { screen: 'handovers', label: 'Handovers' },
   { screen: 'jobs', label: 'Jobs' },

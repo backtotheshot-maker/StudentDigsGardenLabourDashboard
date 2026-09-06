@@ -5,7 +5,9 @@ const now = new Date();
 
 export const state = {
   db: null, // filled by fetchAll()
-  screen: 'calendar', // calendar | handovers | jobs | payments | students | homeowners
+  screen: 'home', // home | calendar | handovers | jobs | payments | students | homeowners
+  // home
+  showExpenseForm: false,
   // calendar
   calView: 'month',
   calYear: now.getFullYear(),

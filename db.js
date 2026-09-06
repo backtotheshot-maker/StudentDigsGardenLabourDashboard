@@ -5,14 +5,15 @@ import { timeToHours } from './utils.js';
 // ---- reads ----------------------------------------------------------------
 
 export async function fetchAll() {
-  const [employees, clients, jobs, settingsRows, payments] = await Promise.all([
+  const [employees, clients, jobs, settingsRows, payments, expenses] = await Promise.all([
     client.from('employees').select('*').order('name'),
     client.from('clients').select('*').order('name'),
     client.from('jobs').select('*').order('date', { ascending: false }),
     client.from('business_settings').select('*').eq('id', 1).maybeSingle(),
     client.from('payments').select('*'),
+    client.from('expenses').select('*').order('date', { ascending: false }),
   ]);
-  for (const r of [employees, clients, jobs, payments]) {
+  for (const r of [employees, clients, jobs, payments, expenses]) {
     if (r.error) throw r.error;
   }
   if (settingsRows.error) throw settingsRows.error;
@@ -23,6 +24,7 @@ export async function fetchAll() {
     jobs: jobs.data || [],
     settings: settingsRows.data || {},
     payments: payments.data || [],
+    expenses: expenses.data || [],
   };
 }
 
@@ -70,6 +72,15 @@ export async function confirmAll(jobIds) {
   if (error) throw error;
 }
 
+export async function updateEmployeeBank(employeeId, { bank_name, bank_sort_code, bank_account_number }) {
+  const bank_last4 = bank_account_number ? String(bank_account_number).replace(/\s+/g, '').slice(-4) : null;
+  const { error } = await client
+    .from('employees')
+    .update({ bank_name, bank_sort_code, bank_account_number, bank_last4 })
+    .eq('id', employeeId);
+  if (error) throw error;
+}
+
 export async function nudgeHandover(clientId) {
   const { error } = await client.from('clients').update({ last_nudged_at: new Date().toISOString() }).eq('id', clientId);
   if (error) throw error;
@@ -86,5 +97,26 @@ export async function sendPaymentRun(rows) {
   const jobIds = rows.flatMap((row) => row.jobIds);
   if (!jobIds.length) return;
   const { error } = await client.from('jobs').update({ paid: true }).in('id', jobIds);
+  if (error) throw error;
+}
+
+// ---- expenses ---------------------------------------------------------------
+// One-off: `date` is when it was incurred. Monthly (e.g. an insurance direct
+// debit): `date` is the first charge date, and it keeps accruing once a month
+// against profit until `ended_date` is set (via stopExpense) — nothing is
+// deleted just because it stopped, so past months still count.
+
+export async function addExpense({ description, amount, type, date }) {
+  const { error } = await client.from('expenses').insert({ description, amount, type, date });
+  if (error) throw error;
+}
+
+export async function stopExpense(id, ended_date = new Date().toISOString().slice(0, 10)) {
+  const { error } = await client.from('expenses').update({ ended_date }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteExpense(id) {
+  const { error } = await client.from('expenses').delete().eq('id', id);
   if (error) throw error;
 }

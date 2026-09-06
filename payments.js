@@ -1,5 +1,5 @@
 import { money, hours, dayLabel, fmtTime, escapeHtml } from './utils.js';
-import { enrichJobs, isPayable, owedSummary } from './derive.js';
+import { enrichJobs, owedSummary, paymentGroups } from './derive.js';
 import { EMPLOYEE_PAY_RATE } from './config.js';
 
 const STEPS = [
@@ -89,25 +89,15 @@ function stepCheck(doneJobs, confirmed, queried) {
     </div>`;
 }
 
-function groupByStudent(payableJobs) {
-  const byEmp = {};
-  for (const j of payableJobs) {
-    (byEmp[j.employee_id] ||= { employee: j.employee, jobs: [] }).jobs.push(j);
-  }
-  return Object.values(byEmp).filter((g) => g.employee);
-}
-
 function stepAmounts(state, owed) {
-  const groups = groupByStudent(owed.jobs);
+  const groups = paymentGroups(owed.jobs, state.topUps);
   let billedTotal = 0, payTotal = 0, topUpTotal = 0;
 
   const rows = groups.map((g) => {
     const emp = g.employee;
     const hrs = g.jobs.reduce((s, j) => s + j.hours, 0);
     const billed = g.jobs.reduce((s, j) => s + j.billed, 0);
-    const basePay = g.jobs.reduce((s, j) => s + j.pay, 0);
-    const topUp = state.topUps[emp.id] || 0;
-    const pay = basePay + topUp;
+    const { pay, topUp } = g;
     const margin = billed - pay;
     billedTotal += billed; payTotal += pay; topUpTotal += topUp;
     const bank = emp.bank_name ? `${escapeHtml(emp.bank_name)} ••${escapeHtml(emp.bank_last4 || '----')}` : 'No bank on file';
@@ -150,17 +140,30 @@ function stepAmounts(state, owed) {
     </div>`;
 }
 
+function formatSortCode(s) {
+  const digits = String(s || '').replace(/\D/g, '');
+  return digits.length === 6 ? `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 6)}` : (s || '');
+}
+
 function stepSend(state, owed) {
-  const groups = groupByStudent(owed.jobs);
+  const groups = paymentGroups(owed.jobs, state.topUps);
   let total = 0, hrs = 0;
   const rows = groups.map((g) => {
-    const emp = g.employee;
-    const basePay = g.jobs.reduce((s, j) => s + j.pay, 0);
-    const topUp = state.topUps[emp.id] || 0;
-    const pay = basePay + topUp;
-    total += pay;
+    total += g.pay;
     hrs += g.jobs.reduce((s, j) => s + j.hours, 0);
-    return `<div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:6px;border-bottom:1px solid var(--color-divider)"><span>${escapeHtml(emp.name)}</span><span style="font-family:var(--font-heading);font-weight:800">${money(pay)}</span></div>`;
+    const emp = g.employee;
+    const hasBank = emp.bank_sort_code && emp.bank_account_number;
+    const bankLine = hasBank
+      ? `${escapeHtml(formatSortCode(emp.bank_sort_code))} · ${escapeHtml(emp.bank_account_number)}${emp.bank_name ? ' · ' + escapeHtml(emp.bank_name) : ''}`
+      : `<span style="color:var(--color-accent-2-800)">No bank details on file — add on their Students page</span>`;
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;font-size:13px;padding-bottom:8px;border-bottom:1px solid var(--color-divider)">
+        <div>
+          <div style="font-family:var(--font-heading);font-weight:800">${escapeHtml(emp.name)}</div>
+          <div style="font-size:11px;color:var(--color-neutral-700);margin-top:1px">${bankLine}</div>
+        </div>
+        <span style="font-family:var(--font-heading);font-weight:800;white-space:nowrap">${money(g.pay)}</span>
+      </div>`;
   }).join('');
 
   const today = new Date();
@@ -174,23 +177,16 @@ function stepSend(state, owed) {
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="field"><label>Pay from</label><div class="input" style="display:flex;align-items:center;justify-content:space-between"><span>${escapeHtml(bankDisplay)}</span></div></div>
           <div class="field"><label>Reference</label><div class="input" style="display:flex;align-items:center">SD GARDEN · ${ref}</div></div>
-          <div class="field"><label>Also do</label>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--color-neutral-700)">
-              <label class="radio"><input type="checkbox" checked disabled><span class="dot"></span>Email each student their statement</label>
-              <label class="radio"><input type="checkbox" checked disabled><span class="dot"></span>Raise homeowner invoices</label>
-              <label class="radio"><input type="checkbox" disabled><span class="dot"></span>Export a CSV for the accountant</label>
-            </div>
-            <p style="font-size:11px;color:var(--color-neutral-700);margin:6px 0 0">These aren't wired up yet — sending only records the jobs as paid.</p>
-          </div>
+          <p style="font-size:12px;color:var(--color-neutral-700);margin:0;max-width:44ch">Pay each student using the amount and bank details on the right — from your banking app, same as any other transfer. Once they're all paid, press "Mark as paid" to record it here.</p>
         </div>
       </div>
       <div style="border:2px solid var(--color-text);padding:16px;display:flex;flex-direction:column;gap:12px">
-        <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--color-accent-700)">Ready to send</span>
+        <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--color-accent-700)">Ready to pay</span>
         <div style="font-family:var(--font-heading);font-weight:800;font-size:40px;line-height:1">${money(total, { headline: true })}</div>
         <div style="font-size:12px;color:var(--color-neutral-700)">${groups.length} payments · ${hours(hrs)}</div>
         <hr class="hr" style="margin:0">
         ${rows || '<p style="font-size:13px;color:var(--color-neutral-700)">Nothing to send.</p>'}
-        <button class="btn btn-primary btn-block" data-act="send-payment" data-ref="${escapeHtml('SD GARDEN · ' + ref)}" ${groups.length ? '' : 'disabled'}>Send ${money(total, { headline: true })}</button>
+        <button class="btn btn-primary btn-block" data-act="send-payment" data-ref="${escapeHtml('SD GARDEN · ' + ref)}" ${groups.length ? '' : 'disabled'}>Mark as paid — ${money(total, { headline: true })}</button>
         <button class="btn btn-secondary btn-block" data-act="pay-back">Back</button>
       </div>
     </div>`;
