@@ -75,39 +75,16 @@ export async function nudgeHandover(clientId) {
   if (error) throw error;
 }
 
-// Sends a payment run: one `payments` row per student covering their confirmed,
-// unpaid jobs, then flips those jobs to paid and links them to the new payment row.
-// NOTE: there is no live bank/Starling integration here — this records that the
-// run happened and settles the jobs; moving the actual money is still a manual
-// step (or a future integration) outside this app.
-export async function sendPaymentRun(rows, reference) {
-  const today = new Date().toISOString().slice(0, 10);
-  const results = [];
-  for (const row of rows) {
-    const { data: payment, error: payErr } = await client
-      .from('payments')
-      .insert({
-        employee_id: row.employeeId,
-        week_start_date: today,
-        week_end_date: today,
-        amount_due: row.pay,
-        status: 'paid',
-        paid_at: new Date().toISOString(),
-        top_up: row.topUp || 0,
-        reference,
-      })
-      .select()
-      .single();
-    if (payErr) throw payErr;
-    // Only payment_id changes here — jobs.status stays 'completed' (the
-    // employee app's value). Setting payment_id is what makes the dashboard
-    // treat the job as "paid" from here on.
-    const { error: jobsErr } = await client
-      .from('jobs')
-      .update({ payment_id: payment.id })
-      .in('id', row.jobIds);
-    if (jobsErr) throw jobsErr;
-    results.push(payment);
-  }
-  return results;
+// Sends a payment run: flips every job across all the given rows to paid.
+// NOTE: there is no live bank/Starling integration here and no bookkeeping
+// row is written either — this is deliberately just the "settle these jobs"
+// step; moving the actual money is still a manual step outside this app.
+// Only `jobs.paid` changes here — jobs.status stays 'completed' (the
+// employee app's value), so the employee app's own reads/writes are never
+// touched by a payment run.
+export async function sendPaymentRun(rows) {
+  const jobIds = rows.flatMap((row) => row.jobIds);
+  if (!jobIds.length) return;
+  const { error } = await client.from('jobs').update({ paid: true }).in('id', jobIds);
+  if (error) throw error;
 }

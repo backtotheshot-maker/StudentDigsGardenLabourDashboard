@@ -61,7 +61,7 @@ employee app keeps working exactly as before):
 
 - **employees**: `course`, `started_date`, `bank_name`, `bank_last4`
 - **clients**: `source`, `handed_over_date`, `first_booking_date`, `last_nudged_at`
-- **jobs**: `task_label`, `photos_count`, `review_status`, `payment_id`
+- **jobs**: `task_label`, `photos_count`, `review_status`, `payment_id`, `paid`
 - **payments**: `top_up`, `reference`
 - **business_settings**: `green_waste_charge` (£10), `green_waste_pay` (£8),
   `bank_display` (the "Pay from" label text)
@@ -70,12 +70,24 @@ employee app keeps working exactly as before):
 (changing it to `booked`/`done`/`paid`) and it broke the employee app, which
 writes and expects only `upcoming` / `completed`. That's been reverted back to
 exactly how it always was. Instead, the dashboard derives its own three-stage
-view (booked → done, to pay → paid) purely in its own code, from two things it
-already has: `status` (`upcoming` = booked, `completed` = done or paid) and
-whether `payment_id` is set (that's what distinguishes "done, to pay" from
-"paid" — a payment run setting `payment_id` is what flips a job to "paid" here,
-without ever touching `status`). So the employee app's own reads and writes to
-`jobs.status` are completely unaffected by anything this dashboard does.
+view (booked → done, to pay → paid) purely in its own code, from two things
+that live only on the dashboard side: `status` (`upcoming` = booked,
+`completed` = done or paid) and a plain `jobs.paid` true/false flag — hitting
+"Send" in a payment run is a single update setting `paid = true` on the jobs
+being paid, nothing else. That's it — no separate `payments` row has to be
+written for a job to read as paid, which is also why the "Send" button now
+can't silently do nothing: there's only one write, and if it fails you'll see
+a banner across the top of the page saying so (see below). So the employee
+app's own reads and writes to `jobs.status` are completely unaffected by
+anything this dashboard does.
+
+*(There's a legacy `payment_id` column and `payments` table from an earlier
+version of this feature that did write a bookkeeping row per payment run —
+one already-paid job in your data still carries a `payment_id`, so the
+dashboard still treats a job as paid if either `paid` is true or it has a
+`payment_id`, but new payment runs no longer touch `payments`/`payment_id` at
+all, since you said you don't need real money-out tracking. Both are harmless
+to ignore or delete if you want to tidy up later.)*
 
 There's also a **city_rates** table left over from the per-city billing model —
 it's unused now the pay model is flat, harmless to ignore or delete.
@@ -85,10 +97,16 @@ backfilling — they'll just show blanks (e.g. "no bank on file") until filled i
 
 ## Things that are deliberately not real yet
 
-- **No live bank transfer.** "Send £X" in the payment run records the jobs as paid
-  and writes a `payments` row — it does not move money via Starling/SumUp. That's a
-  real bank integration that's out of scope here; until it exists, sending is the
-  bookkeeping step, and you still send the actual payment yourself.
+- **No live bank transfer, and no separate bookkeeping row either.** "Send £X" in
+  the payment run just flips those jobs' `paid` flag to true — it doesn't move
+  money via Starling/SumUp, and (as of this version) it doesn't write anything to
+  the `payments` table either, since that's not something you need tracked. You
+  still send the actual payment yourself; this just marks the jobs as settled so
+  they drop off "to pay" and stop showing up as owed.
+- **If a payment run ever does fail** (e.g. a login session expiring), you'll see
+  a banner across the top of the page saying "That didn't save: …" — dismiss it
+  with the ✕, sort out whatever it says, and try Send again. It won't silently
+  do nothing.
 - **No email/invoice automation.** The "Email each student their statement" and
   "Raise homeowner invoices" checkboxes are shown (matching the design) but don't
   do anything — there's no email service or invoicing wired up.

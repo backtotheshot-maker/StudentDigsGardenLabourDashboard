@@ -26,6 +26,7 @@ export const state = {
   // ui
   loading: false,
   error: null,
+  actionError: null, // set when a write (mark done, send payment, etc.) fails
 };
 
 const listeners = new Set();

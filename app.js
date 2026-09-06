@@ -9,6 +9,7 @@ import { renderPayments } from './payments.js';
 import { renderStudents } from './students.js';
 import { renderHomeowners } from './homeowners.js';
 import { signOut } from './auth.js';
+import { escapeHtml } from './utils.js';
 
 const root = document.getElementById('app');
 
@@ -66,11 +67,20 @@ function render() {
     homeowners: renderHomeowners,
   }[state.screen](state);
 
+  const errorBanner = state.actionError ? `
+    <div style="position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 24px;background:var(--color-accent-2-200,#fbe2d5);color:var(--color-accent-2-800,#7a2e0e);font-size:13px;border-bottom:2px solid var(--color-text)">
+      <span>That didn't save: ${escapeHtml(state.actionError)}</span>
+      <button data-act="dismiss-error" style="border:0;background:transparent;font-weight:800;cursor:pointer;color:inherit">Dismiss ✕</button>
+    </div>` : '';
+
   root.innerHTML = `
-    <div style="display:flex;align-items:stretch;flex-wrap:wrap;min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
-      ${renderLeftRail(state)}
-      <section style="flex:1 1 560px;min-width:0;padding:16px 24px 32px">${centre}</section>
-      ${renderRightRail(state)}
+    <div style="display:flex;flex-direction:column;min-height:100vh">
+      ${errorBanner}
+      <div style="display:flex;align-items:stretch;flex-wrap:wrap;flex:1">
+        ${renderLeftRail(state)}
+        <section style="flex:1 1 560px;min-width:0;padding:16px 24px 32px">${centre}</section>
+        ${renderRightRail(state)}
+      </div>
     </div>`;
 
   if (focusKey) {
@@ -85,9 +95,14 @@ function render() {
 async function withRefresh(fn) {
   try {
     await fn();
+    setState({ actionError: null });
   } catch (err) {
     console.error(err);
-    alert(`That didn't save: ${err.message || err}`);
+    setState({ actionError: err.message || String(err) || 'Unknown error' });
+    // alert() can be silently blocked in some embedded/preview contexts, so
+    // the actionError banner (rendered at the top of the page) is the
+    // reliable way this surfaces — alert is just a bonus on top of it.
+    try { alert(`That didn't save: ${err.message || err}`); } catch {}
   }
   await refresh();
 }
@@ -184,19 +199,17 @@ function onClick(e) {
         employeeId,
         jobIds,
         pay: owed.jobs.filter((j) => j.employee_id === employeeId).reduce((s, j) => s + j.pay, 0) + (state.topUps[employeeId] || 0),
-        topUp: state.topUps[employeeId] || 0,
       }));
       if (!payRowsForSend.length) break;
+      const snapshot = {
+        total: payRowsForSend.reduce((s, r) => s + r.pay, 0),
+        students: payRowsForSend.length,
+      };
       withRefresh(async () => {
-        await sendPaymentRun(payRowsForSend, t.dataset.ref);
-        setState({
-          paid: true,
-          topUps: {},
-          sentSnapshot: {
-            total: payRowsForSend.reduce((s, r) => s + r.pay, 0),
-            students: payRowsForSend.length,
-          },
-        });
+        // Just flips the relevant jobs to paid — no separate payments-table
+        // bookkeeping row, so there's nothing else here that can fail.
+        await sendPaymentRun(payRowsForSend);
+        setState({ paid: true, topUps: {}, sentSnapshot: snapshot });
       });
       break;
     }
@@ -220,6 +233,10 @@ function onClick(e) {
       break;
     case 'nudge':
       withRefresh(() => nudgeHandover(t.dataset.id));
+      break;
+    case 'dismiss-error':
+      setState({ actionError: null });
+      render();
       break;
     default:
       break;

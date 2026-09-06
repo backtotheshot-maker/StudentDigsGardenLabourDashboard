@@ -12,10 +12,12 @@ export function indexById(rows) {
 
 // The employee app owns jobs.status and only ever writes 'upcoming' or
 // 'completed' — the dashboard's three-stage view (booked / done, to pay /
-// paid) is derived from that plus payment_id, never stored as a third status
-// value, so the employee app's own reads/writes are never affected by this.
+// paid) is derived from that plus its own `paid` flag, never stored as a
+// third status value, so the employee app's own reads/writes are never
+// affected by this. (`payment_id` is also checked for backwards-compatibility
+// with jobs paid before the simpler `paid` flag existed.)
 export function jobStage(job) {
-  if (job.payment_id) return 'paid';
+  if (job.paid || job.payment_id) return 'paid';
   if (job.status === 'completed') return 'done';
   return 'booked';
 }
