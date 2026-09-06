@@ -1,5 +1,6 @@
 import { money, hours, dayLabel, fmtTime, escapeHtml } from './utils.js';
 import { enrichJobs, isPayable, owedSummary } from './derive.js';
+import { EMPLOYEE_PAY_RATE } from './config.js';
 
 const STEPS = [
   { label: 'Check the work' },
@@ -115,7 +116,7 @@ function stepAmounts(state, owed) {
         <td style="font-family:var(--font-heading);font-weight:800">${escapeHtml(emp.name)}<div style="font-size:11px;font-weight:400;color:var(--color-neutral-700)">${bank}</div></td>
         <td style="text-align:right">${g.jobs.length}</td>
         <td style="text-align:right">${hours(hrs)}</td>
-        <td style="text-align:right">${money(emp.hourly_rate)}</td>
+        <td style="text-align:right">${money(EMPLOYEE_PAY_RATE)}</td>
         <td style="text-align:right">
           <div style="display:inline-flex;align-items:center;gap:6px">
             <button class="btn btn-secondary" style="width:26px;height:26px;padding:0;justify-content:center" data-act="topup" data-emp="${emp.id}" data-delta="-5">–</button>

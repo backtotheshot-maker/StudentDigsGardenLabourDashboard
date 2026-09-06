@@ -1,5 +1,6 @@
-import { money, hours, dayLabel, tagStyle, statusTone, escapeHtml } from './utils.js';
+import { money, hours, dayLabel, tagStyle, statusTone, escapeHtml, workLabel } from './utils.js';
 import { enrichJobs, studentSummary, owedSummary } from './derive.js';
+import { EMPLOYEE_PAY_RATE } from './config.js';
 
 export function renderStudents(state) {
   if (state.stuId) return studentDetail(state);
@@ -26,7 +27,7 @@ function studentList(state) {
           <span style="font-family:var(--font-heading);font-weight:800;font-size:15px">${escapeHtml(e.name)}</span>
         </div>
         <span style="font-size:11px;color:var(--color-neutral-700)">${escapeHtml(e.city || '—')} · ${escapeHtml(e.course || '—')}</span>
-        <span style="font-size:12px">${thisWeek} · ${money(e.hourly_rate)}/hr</span>
+        <span style="font-size:12px">${thisWeek}</span>
         <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--color-divider);padding-top:6px;margin-top:2px">
           <span style="font-size:11px;color:var(--color-neutral-700)">owed now</span>
           <span style="font-family:var(--font-heading);font-weight:800;font-size:15px">${s.owed.pay ? money(s.owed.pay) : '—'}</span>
@@ -53,14 +54,14 @@ function studentDetail(state) {
     { label: 'Booked, week ahead', value: hours(s.weekAheadHours), note: '' },
     { label: 'Owed now', value: money(s.owed.pay), note: `${s.owed.count} jobs done` },
     { label: 'Homeowners', value: s.theirClients.length, note: 'handed to them' },
-    { label: 'Hours, term', value: hours(s.totalHours), note: `at ${money(e.hourly_rate)}/hr` },
+    { label: 'Hours, term', value: hours(s.totalHours), note: `at ${money(EMPLOYEE_PAY_RATE)}/hr` },
   ];
 
   const jobRows = s.theirJobs.slice(0, 12).map((j) => {
     const { tone, label } = statusTone(j.status);
     return `
       <div data-act="select-job" data-id="${j.id}" style="display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider);flex-wrap:wrap;cursor:pointer">
-        <span style="flex:1 1 140px;font-size:14px">${escapeHtml(j.homeowner?.name || '—')}<span style="display:block;font-size:11px;color:var(--color-neutral-700)">${dayLabel(j.date)} · ${escapeHtml(j.task_label || '')}</span></span>
+        <span style="flex:1 1 140px;font-size:14px">${escapeHtml(j.homeowner?.name || '—')}<span style="display:block;font-size:11px;color:var(--color-neutral-700)">${dayLabel(j.date)} · ${escapeHtml(workLabel(j))}</span></span>
         <span style="font-size:12px">${hours(j.hours)}</span>
         <span style="font-size:13px;font-family:var(--font-heading);font-weight:800">${money(j.pay)}</span>
         <span style="${tagStyle(tone)}">${label}</span>
@@ -78,10 +79,9 @@ function studentDetail(state) {
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--color-divider);padding-bottom:12px">
         <div>
           <h1 style="font-size:34px;margin:0 0 2px">${escapeHtml(e.name)}</h1>
-          <p style="margin:0;font-size:13px;color:var(--color-neutral-700)">${escapeHtml(e.city || '—')} · ${escapeHtml(e.course || '—')} · ${money(e.hourly_rate)}/hr · ${escapeHtml(e.phone || '—')} · ${bank}</p>
+          <p style="margin:0;font-size:13px;color:var(--color-neutral-700)">${escapeHtml(e.city || '—')} · ${escapeHtml(e.course || '—')} · ${money(EMPLOYEE_PAY_RATE)}/hr · ${escapeHtml(e.phone || '—')} · ${bank}</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary" data-act="change-rate" data-id="${e.id}">Change rate</button>
           <button class="btn btn-primary" data-act="nav" data-screen="payments">Pay ${money(s.owed.pay)}</button>
         </div>
       </div>

@@ -1,50 +1,42 @@
 import { client } from './supabaseClient.js';
-import { CITY_RATE_FALLBACK } from './config.js';
+import { EMPLOYEE_PAY_RATE, CLIENT_CHARGE_RATE } from './config.js';
 import { timeToHours } from './utils.js';
 
 // ---- reads ----------------------------------------------------------------
 
 export async function fetchAll() {
-  const [employees, clients, jobs, cityRates, settingsRows, payments] = await Promise.all([
+  const [employees, clients, jobs, settingsRows, payments] = await Promise.all([
     client.from('employees').select('*').order('name'),
     client.from('clients').select('*').order('name'),
     client.from('jobs').select('*').order('date', { ascending: false }),
-    client.from('city_rates').select('*'),
     client.from('business_settings').select('*').eq('id', 1).maybeSingle(),
     client.from('payments').select('*'),
   ]);
-  for (const r of [employees, clients, jobs, cityRates, payments]) {
+  for (const r of [employees, clients, jobs, payments]) {
     if (r.error) throw r.error;
   }
   if (settingsRows.error) throw settingsRows.error;
-
-  const cityRateMap = {};
-  for (const row of cityRates.data || []) cityRateMap[row.city] = Number(row.hourly_charge);
 
   return {
     employees: employees.data || [],
     clients: clients.data || [],
     jobs: jobs.data || [],
-    cityRateMap,
     settings: settingsRows.data || {},
     payments: payments.data || [],
   };
 }
 
 // ---- money rules ------------------------------------------------------------
+// Flat business model: every employee is paid £14/hr, every homeowner is
+// billed £16/hr. Green waste is the one variable add-on (+£10 client / +£8
+// employee), read from business_settings since that's already DB-editable.
 
-export function cityRate(cityRateMap, city) {
-  return cityRateMap[city] ?? CITY_RATE_FALLBACK;
-}
-
-export function computeJobMoney(job, employee, cityRateMap, settings) {
+export function computeJobMoney(job, employee, settings) {
   const h = jobHours(job);
-  const rate = Number(employee?.hourly_rate || 0);
-  const cRate = cityRate(cityRateMap, employee?.city);
   const gwPay = Number(settings.green_waste_pay ?? 8);
   const gwCharge = Number(settings.green_waste_charge ?? 10);
-  const pay = job.pay_amount != null ? Number(job.pay_amount) : h * rate + (job.green_waste ? gwPay : 0);
-  const billed = job.client_charge != null ? Number(job.client_charge) : h * cRate + (job.green_waste ? gwCharge : 0);
+  const pay = job.pay_amount != null ? Number(job.pay_amount) : h * EMPLOYEE_PAY_RATE + (job.green_waste ? gwPay : 0);
+  const billed = job.client_charge != null ? Number(job.client_charge) : h * CLIENT_CHARGE_RATE + (job.green_waste ? gwCharge : 0);
   return { hours: h, pay, billed };
 }
 
@@ -54,8 +46,8 @@ export function jobHours(job) {
 
 // ---- mutations --------------------------------------------------------------
 
-export async function markJobDone(job, employee, cityRateMap, settings) {
-  const { hours: h, pay, billed } = computeJobMoney(job, employee, cityRateMap, settings);
+export async function markJobDone(job, employee, settings) {
+  const { hours: h, pay, billed } = computeJobMoney(job, employee, settings);
   const { error } = await client
     .from('jobs')
     .update({ status: 'done', pay_amount: pay, client_charge: billed })
@@ -76,11 +68,6 @@ export async function confirmAll(jobIds) {
 
 export async function nudgeHandover(clientId) {
   const { error } = await client.from('clients').update({ last_nudged_at: new Date().toISOString() }).eq('id', clientId);
-  if (error) throw error;
-}
-
-export async function changeRate(employeeId, newRate) {
-  const { error } = await client.from('employees').update({ hourly_rate: newRate }).eq('id', employeeId);
   if (error) throw error;
 }
 

@@ -1,4 +1,4 @@
-import { fetchAll, markJobDone, setReview, confirmAll as dbConfirmAll, nudgeHandover, changeRate, sendPaymentRun } from './db.js';
+import { fetchAll, markJobDone, setReview, confirmAll as dbConfirmAll, nudgeHandover, sendPaymentRun } from './db.js';
 import { enrichJobs, owedSummary } from './derive.js';
 import { state, setState, goScreen } from './state.js';
 import { renderLeftRail, renderRightRail } from './rails.js';
@@ -138,7 +138,7 @@ function onClick(e) {
       break;
     case 'mark-done': {
       const job = jobs().find((j) => j.id === t.dataset.id);
-      if (job) withRefresh(() => markJobDone(job, job.employee, state.db.cityRateMap, state.db.settings));
+      if (job) withRefresh(() => markJobDone(job, job.employee, state.db.settings));
       break;
     }
     case 'pay-step':
@@ -218,14 +218,6 @@ function onClick(e) {
       goScreen('homeowners');
       render();
       break;
-    case 'change-rate': {
-      const emp = state.db.employees.find((e) => e.id === t.dataset.id);
-      const next = prompt(`New hourly rate for ${emp?.name || 'this student'} (£/hr):`, emp?.hourly_rate ?? '');
-      if (next != null && next !== '' && !Number.isNaN(Number(next))) {
-        withRefresh(() => changeRate(t.dataset.id, Number(next)));
-      }
-      break;
-    }
     case 'nudge':
       withRefresh(() => nudgeHandover(t.dataset.id));
       break;

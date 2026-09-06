@@ -35,6 +35,25 @@ admin login (the `reeve.s@outlook.com` account already has `role = 'admin'` in t
 `profiles` table) — no new accounts were created. If you want other people to have
 back-office access later, add a `profiles` row for them with `role = 'admin'`.
 
+## The pay model
+
+Flat, not per-student or per-city: **every employee is paid £14/hr, every
+homeowner is billed £16/hr.** That's hardcoded as constants in `config.js`
+(`EMPLOYEE_PAY_RATE`, `CLIENT_CHARGE_RATE`) — the app no longer looks at
+`employees.hourly_rate` at all, so editing that column in Supabase won't do
+anything (an earlier version of this dashboard supported per-student rates
+and per-city billing; that's been removed since the business doesn't use it).
+
+**Green waste** is the one variable add-on and it's wired into every pay/bill
+calculation: when `jobs.green_waste` is true, the job adds +£10 to what the
+homeowner's billed and +£8 to what the student's paid (both editable in the
+`business_settings` table if those figures ever change) — you keep the £2
+difference, same logic as the hourly split. This only applies automatically
+when a job's `pay_amount`/`client_charge` are left blank so the dashboard
+computes them; if you type numbers into those columns directly, whatever you
+type is used as-is. Any job with green waste shows "+ green waste" next to
+its task description throughout the dashboard so it's visible at a glance.
+
 ## What changed in the database
 
 I added columns to the existing tables (nothing was removed or renamed, so the
@@ -44,14 +63,22 @@ employee app keeps working exactly as before):
 - **clients**: `source`, `handed_over_date`, `first_booking_date`, `last_nudged_at`
 - **jobs**: `task_label`, `photos_count`, `review_status`, `payment_id`
 - **payments**: `top_up`, `reference`
-- new **city_rates** table (Exeter/Cardiff £22, Oxford £26 — what homeowners are
-  billed per hour; edit this table directly in Supabase if rates change)
 - **business_settings**: `green_waste_charge` (£10), `green_waste_pay` (£8),
   `bank_display` (the "Pay from" label text)
 
-These are all nullable/defaulted, so existing rows didn't need backfilling — they'll
-just show blanks (e.g. "no bank on file") until you fill them in, either straight in
-the Supabase table editor or by wiring the employee app to collect them.
+I also had to fix `jobs.status` itself: it originally only allowed `upcoming`/
+`completed` (from before this dashboard existed), but the whole payment-run
+workflow here needs three states. It's now `booked` / `done` / `paid`, and new
+rows default to `booked`. There was only one test job in the table when I made
+this change, so it was safe to convert directly rather than support both
+vocabularies going forward — if you (or anything else) writes `upcoming` or
+`completed` into that column now, Supabase will reject it.
+
+There's also a **city_rates** table left over from the per-city billing model —
+it's unused now the pay model is flat, harmless to ignore or delete.
+
+New columns are all nullable/defaulted, so existing rows didn't need
+backfilling — they'll just show blanks (e.g. "no bank on file") until filled in.
 
 ## Things that are deliberately not real yet
 
@@ -64,8 +91,12 @@ the Supabase table editor or by wiring the employee app to collect them.
   do anything — there's no email service or invoicing wired up.
 - **Photos** are just a count (`jobs.photos_count`) — there's no upload UI here or
   in the employee app yet, so it'll read "no photos" until that's built.
-- **"Change rate"** uses a plain browser prompt rather than a proper dialog — quick
-  to use, but worth upgrading to a real modal if this becomes daily-use.
+- **"Nudge" doesn't message anyone.** It only updates `clients.last_nudged_at` in
+  the database — that's what moves a homeowner from "Waiting on student" to
+  "Chased today" and clears it off the badge count. It does not send the student
+  an actual text, email, or push notification; there's no messaging system wired
+  up to do that. It's a personal reminder to yourself that you've followed up,
+  not a notification to them.
 
 ## Small deviations from the handoff
 

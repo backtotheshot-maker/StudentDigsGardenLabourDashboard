@@ -1,4 +1,4 @@
-import { money, hours, dayLabel, fmtTime, tagStyle, statusTone, escapeHtml } from './utils.js';
+import { money, hours, dayLabel, fmtTime, tagStyle, statusTone, escapeHtml, workLabel } from './utils.js';
 import { enrichJobs, handoverList, owedSummary, jobsOnDate, jobsInMonth } from './derive.js';
 
 const NAV = [
@@ -71,7 +71,7 @@ function jobPanel(j) {
   const facts = [
     { label: 'When', value: `${dayLabel(j.date)}, ${fmtTime(j.start_time)}` },
     { label: 'Length', value: hours(j.hours) },
-    { label: 'Work', value: escapeHtml(j.task_label || j.notes || j.job_type || '—') },
+    { label: 'Work', value: escapeHtml(workLabel(j)) },
     { label: 'Student', value: escapeHtml(j.employee?.name || '—') },
     { label: 'Pay / bill', value: `${money(j.pay)} / ${money(j.billed)}` },
     { label: 'Your margin', value: money(j.billed - j.pay) },

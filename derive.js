@@ -16,7 +16,7 @@ export function enrichJobs(db) {
   return db.jobs.map((job) => {
     const employee = employeesById[job.employee_id];
     const homeowner = clientsById[job.client_id];
-    const { hours, pay, billed } = computeJobMoney(job, employee, db.cityRateMap, db.settings);
+    const { hours, pay, billed } = computeJobMoney(job, employee, db.settings);
     return { ...job, employee, homeowner, hours, pay, billed };
   });
 }

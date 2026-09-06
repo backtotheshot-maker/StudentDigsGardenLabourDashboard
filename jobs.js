@@ -1,4 +1,4 @@
-import { money, hours, dayLabel, fmtTime, tagStyle, statusTone, escapeHtml } from './utils.js';
+import { money, hours, dayLabel, fmtTime, tagStyle, statusTone, escapeHtml, workLabel } from './utils.js';
 import { enrichJobs } from './derive.js';
 
 const FILTERS = [
@@ -36,7 +36,7 @@ export function renderJobs(state) {
     return `
       <tr data-act="select-job" data-id="${j.id}" style="cursor:pointer">
         <td style="font-size:13px;white-space:nowrap">${dayLabel(j.date)}<div style="font-size:11px;color:var(--color-neutral-700)">${fmtTime(j.start_time)}</div></td>
-        <td style="font-family:var(--font-heading);font-weight:800">${escapeHtml(j.homeowner?.name || '—')}<div style="font-size:11px;font-weight:400;color:var(--color-neutral-700)">${escapeHtml(j.task_label || j.notes || '')}</div></td>
+        <td style="font-family:var(--font-heading);font-weight:800">${escapeHtml(j.homeowner?.name || '—')}<div style="font-size:11px;font-weight:400;color:var(--color-neutral-700)">${escapeHtml(workLabel(j))}</div></td>
         <td style="font-size:13px">${escapeHtml(j.employee?.name || '—')}</td>
         <td style="text-align:right">${hours(j.hours)}</td>
         <td style="text-align:right;font-family:var(--font-heading);font-weight:800">${money(j.pay)}</td>

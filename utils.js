@@ -16,6 +16,14 @@ export function hours(h) {
   return `${trimmed} hrs`;
 }
 
+// The task description shown in tables/panels, with a visible flag when the
+// job included green waste removal (since that's what changes the pay/bill).
+export function workLabel(job) {
+  const base = job.task_label || job.notes || '';
+  if (!job.green_waste) return base || '—';
+  return base ? `${base} · + green waste` : '+ green waste';
+}
+
 export function initials(name) {
   return (name || '')
     .split(' ')

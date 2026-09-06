@@ -1,4 +1,4 @@
-import { money, hours, shortName, initials, fmtTime, tagStyle, statusTone, monthLabel, isoDate, dowMon0, escapeHtml } from './utils.js';
+import { money, hours, shortName, initials, fmtTime, tagStyle, statusTone, monthLabel, isoDate, dowMon0, escapeHtml, workLabel } from './utils.js';
 import { enrichJobs, monthWindow, jobsInMonth, jobsOnDate } from './derive.js';
 
 const DOW_HEADS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -112,7 +112,7 @@ function agendaView(state, jobs) {
         <div data-act="select-job" data-id="${j.id}" style="display:flex;gap:12px;align-items:baseline;cursor:pointer;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--color-neutral-700);min-width:44px">${fmtTime(j.start_time)}</span>
           <span style="font-size:14px;font-family:var(--font-heading);font-weight:800">${escapeHtml(j.homeowner?.name || '—')}</span>
-          <span style="font-size:12px;color:var(--color-neutral-700)">${escapeHtml(j.employee?.name || '—')} · ${escapeHtml(j.task_label || '')} · ${hours(j.hours)}</span>
+          <span style="font-size:12px;color:var(--color-neutral-700)">${escapeHtml(j.employee?.name || '—')} · ${escapeHtml(workLabel(j))} · ${hours(j.hours)}</span>
           <span style="${tagStyle(tone)}">${label}</span>
         </div>`;
     }).join('');
