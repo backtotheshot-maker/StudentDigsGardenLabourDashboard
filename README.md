@@ -173,6 +173,20 @@ their bank details, so it's obvious before you start paying.
   up to do that. It's a personal reminder to yourself that you've followed up,
   not a notification to them.
 
+## Colours
+
+The page background is white (`--color-bg` in `modernist.css`) rather than
+the handoff's cream — body text is unchanged (it was already a near-black
+`#1f2420`, not literally cream, so nothing to do there). The sidebar's logo +
+nav block now has a solid dark green background using the same green
+already defined as `--color-accent`/`--color-accent-700` (it's what the
+"Booked" tags, primary buttons, etc. were already using, and it's the same
+green as the text in `logo-green.png`) — with `logo-cream.png` swapped in
+there instead of `logo-green.png`, since that file is the transparent,
+pale/cream-coloured version of the mark, made for sitting on a dark surface
+rather than a light one. `logo-green.png` stays in use on the sign-in
+screen, where the surrounding card is still light.
+
 ## Small deviations from the handoff
 
 - Added `‹ ›` month navigation on the calendar — the design only showed September
