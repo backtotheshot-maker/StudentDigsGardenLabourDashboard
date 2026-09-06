@@ -47,10 +47,14 @@ export function jobHours(job) {
 // ---- mutations --------------------------------------------------------------
 
 export async function markJobDone(job, employee, settings) {
+  // 'completed' is the employee app's own vocabulary for "finished" — the
+  // dashboard's "done, to pay" vs "paid" distinction comes from payment_id,
+  // not from a separate status value, so this never touches anything the
+  // employee app doesn't already expect.
   const { hours: h, pay, billed } = computeJobMoney(job, employee, settings);
   const { error } = await client
     .from('jobs')
-    .update({ status: 'done', pay_amount: pay, client_charge: billed })
+    .update({ status: 'completed', pay_amount: pay, client_charge: billed })
     .eq('id', job.id);
   if (error) throw error;
 }
@@ -95,9 +99,12 @@ export async function sendPaymentRun(rows, reference) {
       .select()
       .single();
     if (payErr) throw payErr;
+    // Only payment_id changes here — jobs.status stays 'completed' (the
+    // employee app's value). Setting payment_id is what makes the dashboard
+    // treat the job as "paid" from here on.
     const { error: jobsErr } = await client
       .from('jobs')
-      .update({ status: 'paid', payment_id: payment.id })
+      .update({ payment_id: payment.id })
       .in('id', row.jobIds);
     if (jobsErr) throw jobsErr;
     results.push(payment);

@@ -67,7 +67,7 @@ export function renderRightRail(state) {
 }
 
 function jobPanel(j) {
-  const { tone, label } = statusTone(j.status);
+  const { tone, label } = statusTone(j.stage);
   const facts = [
     { label: 'When', value: `${dayLabel(j.date)}, ${fmtTime(j.start_time)}` },
     { label: 'Length', value: hours(j.hours) },
@@ -77,7 +77,7 @@ function jobPanel(j) {
     { label: 'Your margin', value: money(j.billed - j.pay) },
     { label: 'Status', value: `<span style="${tagStyle(tone)}">${label}</span>` },
   ];
-  const action = j.status === 'done' ? 'Pay this job' : 'Payment run';
+  const action = j.stage === 'done' ? 'Pay this job' : 'Payment run';
   return `
   <div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--color-divider);padding-bottom:6px;margin-bottom:8px">
@@ -143,7 +143,7 @@ function chasePanel(state) {
 
 function monthPanel(state, jobs) {
   const monthJobs = jobsInMonth(jobs, state.calYear, state.calMonth0);
-  const bookedCount = monthJobs.filter((j) => j.status === 'booked').length;
+  const bookedCount = monthJobs.filter((j) => j.stage === 'booked').length;
   const totalHours = monthJobs.reduce((s, j) => s + j.hours, 0);
   const wages = monthJobs.reduce((s, j) => s + j.pay, 0);
   const billed = monthJobs.reduce((s, j) => s + j.billed, 0);

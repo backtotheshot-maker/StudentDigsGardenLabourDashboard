@@ -58,7 +58,7 @@ function studentDetail(state) {
   ];
 
   const jobRows = s.theirJobs.slice(0, 12).map((j) => {
-    const { tone, label } = statusTone(j.status);
+    const { tone, label } = statusTone(j.stage);
     return `
       <div data-act="select-job" data-id="${j.id}" style="display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider);flex-wrap:wrap;cursor:pointer">
         <span style="flex:1 1 140px;font-size:14px">${escapeHtml(j.homeowner?.name || '—')}<span style="display:block;font-size:11px;color:var(--color-neutral-700)">${dayLabel(j.date)} · ${escapeHtml(workLabel(j))}</span></span>

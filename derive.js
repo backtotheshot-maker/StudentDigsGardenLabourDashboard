@@ -10,6 +10,16 @@ export function indexById(rows) {
   return m;
 }
 
+// The employee app owns jobs.status and only ever writes 'upcoming' or
+// 'completed' — the dashboard's three-stage view (booked / done, to pay /
+// paid) is derived from that plus payment_id, never stored as a third status
+// value, so the employee app's own reads/writes are never affected by this.
+export function jobStage(job) {
+  if (job.payment_id) return 'paid';
+  if (job.status === 'completed') return 'done';
+  return 'booked';
+}
+
 export function enrichJobs(db) {
   const employeesById = indexById(db.employees);
   const clientsById = indexById(db.clients);
@@ -17,7 +27,7 @@ export function enrichJobs(db) {
     const employee = employeesById[job.employee_id];
     const homeowner = clientsById[job.client_id];
     const { hours, pay, billed } = computeJobMoney(job, employee, db.settings);
-    return { ...job, employee, homeowner, hours, pay, billed };
+    return { ...job, employee, homeowner, hours, pay, billed, stage: jobStage(job) };
   });
 }
 
@@ -25,7 +35,7 @@ export function enrichJobs(db) {
 // queried away. It stays payable (and counted in owed totals) whether or not
 // it has been explicitly confirmed yet — querying is what removes it.
 export function isPayable(job) {
-  return job.status === 'done' && job.review_status !== 'queried';
+  return job.stage === 'done' && job.review_status !== 'queried';
 }
 
 export function owedSummary(jobs) {
@@ -79,9 +89,9 @@ export function jobsInMonth(jobs, year, month0) {
 export function studentSummary(db, jobs, employee) {
   const theirJobs = jobs.filter((j) => j.employee_id === employee.id);
   const owed = owedSummary(theirJobs);
-  const weekAhead = theirJobs.filter((j) => j.status === 'booked' && withinNextWeek(j.date));
+  const weekAhead = theirJobs.filter((j) => j.stage === 'booked' && withinNextWeek(j.date));
   const theirClients = db.clients.filter((c) => c.primary_employee_id === employee.id);
-  const paidJobs = theirJobs.filter((j) => j.status === 'paid');
+  const paidJobs = theirJobs.filter((j) => j.stage === 'paid');
   const paidToDate = paidJobs.reduce((s, j) => s + j.pay, 0);
   const totalHours = theirJobs.reduce((s, j) => s + j.hours, 0);
   return {

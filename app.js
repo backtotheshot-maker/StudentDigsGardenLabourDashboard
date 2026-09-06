@@ -163,7 +163,7 @@ function onClick(e) {
       withRefresh(() => setReview(t.dataset.id, null));
       break;
     case 'confirm-all': {
-      const unresolved = jobs().filter((j) => j.status === 'done' && !j.review_status).map((j) => j.id);
+      const unresolved = jobs().filter((j) => j.stage === 'done' && !j.review_status).map((j) => j.id);
       withRefresh(() => dbConfirmAll(unresolved));
       break;
     }

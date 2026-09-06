@@ -59,7 +59,7 @@ function monthView(state, jobs) {
     const overflow = dayJobs.length - shown.length;
 
     const chips = shown.map((j) => {
-      const { tone } = statusTone(j.status);
+      const { tone } = statusTone(j.stage);
       const chipStyle = `padding:3px 5px;font-size:10px;line-height:1.25;cursor:pointer;${tagBg(tone)}`;
       return `<div data-act="select-job" data-id="${j.id}" style="${chipStyle}">
         <span style="font-weight:800;font-family:var(--font-heading)">${initials(j.employee?.name)}</span> ${escapeHtml(shortName(j.homeowner?.name || ''))}
@@ -107,7 +107,7 @@ function agendaView(state, jobs) {
     const d = new Date(dateIso);
     const totalHours = dayJobs.reduce((s, j) => s + j.hours, 0);
     const jobsHtml = dayJobs.map((j) => {
-      const { tone, label } = statusTone(j.status);
+      const { tone, label } = statusTone(j.stage);
       return `
         <div data-act="select-job" data-id="${j.id}" style="display:flex;gap:12px;align-items:baseline;cursor:pointer;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--color-neutral-700);min-width:44px">${fmtTime(j.start_time)}</span>

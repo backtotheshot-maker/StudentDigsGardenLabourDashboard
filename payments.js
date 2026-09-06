@@ -13,7 +13,7 @@ export function renderPayments(state) {
 
   const jobs = enrichJobs(state.db);
   const owed = owedSummary(jobs);
-  const doneJobs = jobs.filter((j) => j.status === 'done');
+  const doneJobs = jobs.filter((j) => j.stage === 'done');
   const confirmed = doneJobs.filter((j) => j.review_status === 'confirmed').length;
   const queried = doneJobs.filter((j) => j.review_status === 'queried').length;
 

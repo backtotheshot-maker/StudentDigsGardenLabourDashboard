@@ -66,13 +66,16 @@ employee app keeps working exactly as before):
 - **business_settings**: `green_waste_charge` (£10), `green_waste_pay` (£8),
   `bank_display` (the "Pay from" label text)
 
-I also had to fix `jobs.status` itself: it originally only allowed `upcoming`/
-`completed` (from before this dashboard existed), but the whole payment-run
-workflow here needs three states. It's now `booked` / `done` / `paid`, and new
-rows default to `booked`. There was only one test job in the table when I made
-this change, so it was safe to convert directly rather than support both
-vocabularies going forward — if you (or anything else) writes `upcoming` or
-`completed` into that column now, Supabase will reject it.
+**`jobs.status` itself was NOT changed** — I tried that in an earlier version
+(changing it to `booked`/`done`/`paid`) and it broke the employee app, which
+writes and expects only `upcoming` / `completed`. That's been reverted back to
+exactly how it always was. Instead, the dashboard derives its own three-stage
+view (booked → done, to pay → paid) purely in its own code, from two things it
+already has: `status` (`upcoming` = booked, `completed` = done or paid) and
+whether `payment_id` is set (that's what distinguishes "done, to pay" from
+"paid" — a payment run setting `payment_id` is what flips a job to "paid" here,
+without ever touching `status`). So the employee app's own reads and writes to
+`jobs.status` are completely unaffected by anything this dashboard does.
 
 There's also a **city_rates** table left over from the per-city billing model —
 it's unused now the pay model is flat, harmless to ignore or delete.

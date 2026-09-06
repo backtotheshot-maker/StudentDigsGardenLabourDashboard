@@ -18,21 +18,21 @@ const NOTES = {
 export function renderJobs(state) {
   const jobs = enrichJobs(state.db).sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
   const counts = {
-    booked: jobs.filter((j) => j.status === 'booked').length,
-    to_pay: jobs.filter((j) => j.status === 'done').length,
-    paid: jobs.filter((j) => j.status === 'paid').length,
+    booked: jobs.filter((j) => j.stage === 'booked').length,
+    to_pay: jobs.filter((j) => j.stage === 'done').length,
+    paid: jobs.filter((j) => j.stage === 'paid').length,
     all: jobs.length,
   };
-  const statusMap = { booked: 'booked', to_pay: 'done', paid: 'paid' };
-  const filtered = state.jobsFilter === 'all' ? jobs : jobs.filter((j) => j.status === statusMap[state.jobsFilter]);
+  const stageMap = { booked: 'booked', to_pay: 'done', paid: 'paid' };
+  const filtered = state.jobsFilter === 'all' ? jobs : jobs.filter((j) => j.stage === stageMap[state.jobsFilter]);
 
   const seg = FILTERS.map((f) => `
     <label class="seg-opt"><input type="radio" name="jobfilter" data-act="job-filter" data-filter="${f.key}" ${state.jobsFilter === f.key ? 'checked' : ''}><span>${f.label} ${f.key === 'all' ? `(${counts.all})` : `(${counts[f.key]})`}</span></label>
   `).join('');
 
   const rows = filtered.map((j) => {
-    const { tone, label } = statusTone(j.status);
-    const showMarkDone = j.status === 'booked';
+    const { tone, label } = statusTone(j.stage);
+    const showMarkDone = j.stage === 'booked';
     return `
       <tr data-act="select-job" data-id="${j.id}" style="cursor:pointer">
         <td style="font-size:13px;white-space:nowrap">${dayLabel(j.date)}<div style="font-size:11px;color:var(--color-neutral-700)">${fmtTime(j.start_time)}</div></td>

@@ -11,7 +11,7 @@ export function renderHomeowners(state) {
       const employee = state.db.employees.find((e) => e.id === c.primary_employee_id);
       const theirJobs = jobs.filter((j) => j.client_id === c.id);
       const billed = theirJobs.reduce((s, j) => s + j.billed, 0);
-      const lastDone = theirJobs.filter((j) => j.status !== 'booked').sort((a, b) => b.date.localeCompare(a.date))[0];
+      const lastDone = theirJobs.filter((j) => j.stage !== 'booked').sort((a, b) => b.date.localeCompare(a.date))[0];
       const sourceTone = c.source === 'Referral' ? 'good' : 'flat';
       return { c, employee, jobCount: theirJobs.length, billed, last: lastDone };
     });
