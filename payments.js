@@ -180,7 +180,7 @@ function stepSend(state, owed) {
           <p style="font-size:12px;color:var(--color-neutral-700);margin:0;max-width:44ch">Pay each student using the amount and bank details on the right — from your banking app, same as any other transfer. Once they're all paid, press "Mark as paid" to record it here.</p>
         </div>
       </div>
-      <div style="border:2px solid var(--color-text);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="border:1px solid var(--color-text);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:20px;display:flex;flex-direction:column;gap:12px">
         <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--color-accent-700)">Ready to pay</span>
         <div style="font-family:var(--font-heading);font-weight:800;font-size:40px;line-height:1">${money(total, { headline: true })}</div>
         <div style="font-size:12px;color:var(--color-neutral-700)">${groups.length} payments · ${hours(hrs)}</div>

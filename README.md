@@ -173,6 +173,21 @@ their bank details, so it's obvious before you start paying.
   up to do that. It's a personal reminder to yourself that you've followed up,
   not a notification to them.
 
+## Earnings chart
+
+The Home tab now has an "Earnings" chart between the top stat tiles and the
+week strip — revenue (bars) and profit (the line) for each of the last 6
+calendar months, including the current one in progress. Hover any bar or
+point for the exact figure; a dashed line at £0 only appears if profit dips
+below it in that window, so a normal, profitable stretch doesn't show a
+line you don't need. It's a hand-drawn SVG (no charting library, same
+zero-dependency approach as the rest of the app), built from `derive.js`'s
+new `monthlySeries()` — a lighter-weight month-by-month version of the same
+revenue/profit rules `financeSummary` uses for the all-time totals above it
+(recognised on completion, expenses counted where they were active that
+month), so it's a trend view rather than a running ledger; the two won't
+add up to the all-time figures and aren't meant to.
+
 ## Colours
 
 The page background is white (`--color-bg` in `modernist.css`) rather than
@@ -186,6 +201,25 @@ there instead of `logo-green.png`, since that file is the transparent,
 pale/cream-coloured version of the mark, made for sitting on a dark surface
 rather than a light one. `logo-green.png` stays in use on the sign-in
 screen, where the surrounding card is still light.
+
+## A rounder, more polished look
+
+A general pass to make the whole thing feel a bit smoother and less
+spreadsheet-like, without changing the colours again: corners are now
+gently rounded everywhere (`--radius-sm/md/lg` in `modernist.css`, which
+used to be a deliberately sharp `0`), dividing lines are lighter (that same
+file's `--color-divider`, down from 40% to 14% black), and buttons, inputs,
+cards and table rows now have a soft shadow and a quick, smooth transition
+on hover instead of snapping straight to a new state. Primary buttons lift
+very slightly on hover for the same reason. This reaches every screen
+automatically since it's all done through the shared tokens in
+`modernist.css` — I additionally hand-applied it to the biggest boxes that
+don't use those shared styles (the Home tiles and earnings card, the sign-in
+card, the student cards, the "Ready to pay" box, the sidebar), since those
+are hand-styled per-screen rather than built from the shared `.card` class.
+I didn't rewrite every smaller box on every screen individually — if
+something still looks flat/sharp-edged to you, point me at it and I'll
+match it up.
 
 ## Small deviations from the handoff
 
@@ -208,5 +242,5 @@ Everything sits in one folder next to `index.html`:
   `calendar.js` / `handovers.js` / `jobs.js` / `payments.js` / `students.js` /
   `homeowners.js` are the seven screens, `db.js` / `derive.js` hold the Supabase
   queries and money-rule calculations
-- `modernist.css` — the design system stylesheet, copied over unchanged
+- `modernist.css` — the design system stylesheet (see "A rounder, more polished look" above for what's changed from the handoff)
 - `logo-green.png` / `logo-cream.png` — logo files from the handoff

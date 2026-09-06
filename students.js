@@ -21,7 +21,7 @@ function studentList(state) {
       : 'width:9px;height:9px;border-radius:50%;border:1.5px solid var(--color-neutral-500);display:inline-block';
     const thisWeek = hasUpcoming ? `${s.weekAheadHours % 1 === 0 ? s.weekAheadHours : s.weekAheadHours.toFixed(1)}h this week` : 'nothing this week';
     return `
-      <div data-act="open-student" data-id="${e.id}" style="border:2px solid var(--color-divider);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px">
+      <div data-act="open-student" data-id="${e.id}" class="sd-card-hover" style="border:1px solid var(--color-divider);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="${dotStyle}"></span>
           <span style="font-family:var(--font-heading);font-weight:800;font-size:15px">${escapeHtml(e.name)}</span>
@@ -100,7 +100,7 @@ function studentDetail(state) {
         <section>
           <div style="border-bottom:2px solid var(--color-divider);padding-bottom:6px;margin-bottom:6px"><h2 style="font-size:17px;margin:0">Their homeowners</h2></div>
           ${clientRows}
-          <div style="margin-top:12px;border:2px solid var(--color-divider);padding:12px">
+          <div style="margin-top:12px;border:1px solid var(--color-divider);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:12px">
             <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-neutral-700)">Paid to date</div>
             <div style="font-family:var(--font-heading);font-weight:800;font-size:24px">${money(s.paidToDate)}</div>
             <div style="font-size:11px;color:var(--color-neutral-700)">${s.jobsToDate} jobs${e.started_date ? ' since ' + e.started_date : ''}</div>
@@ -108,7 +108,7 @@ function studentDetail(state) {
         </section>
         <section>
           <div style="border-bottom:2px solid var(--color-divider);padding-bottom:6px;margin-bottom:6px"><h2 style="font-size:17px;margin:0">Bank details</h2></div>
-          <div style="border:2px solid var(--color-divider);padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="border:1px solid var(--color-divider);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:12px;display:flex;flex-direction:column;gap:8px">
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <div class="field" style="flex:1 1 120px"><label>Bank name</label><input class="input" id="bank-name-${e.id}" value="${escapeHtml(e.bank_name || '')}" placeholder="e.g. Monzo"></div>
               <div class="field" style="flex:1 1 90px"><label>Sort code</label><input class="input" id="bank-sort-${e.id}" value="${escapeHtml(e.bank_sort_code || '')}" placeholder="00-00-00"></div>

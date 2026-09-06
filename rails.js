@@ -30,19 +30,19 @@ export function renderLeftRail(state) {
       ? 'border-left-color:var(--color-accent);background:var(--color-accent-100);color:var(--color-text);'
       : 'color:rgba(255,255,255,0.75);';
     return `
-      <button data-act="nav" data-screen="${n.screen}" style="font-family:var(--font-heading);font-weight:800;font-size:14px;padding:9px 16px;background:none;border:0;border-left:3px solid transparent;text-align:left;cursor:pointer;display:flex;justify-content:space-between;gap:8px;width:100%;${style}">
+      <button data-act="nav" data-screen="${n.screen}" class="sd-nav-btn${active ? '' : ' sd-nav-btn-inactive'}" style="font-family:var(--font-heading);font-weight:800;font-size:14px;padding:9px 16px;background:none;border:0;border-left:3px solid transparent;text-align:left;cursor:pointer;display:flex;justify-content:space-between;gap:8px;width:100%;${style}">
         <span>${n.label}</span>
-        <span style="${badge > 0 ? 'font-size:10px;padding:1px 6px;background:#fff;color:var(--color-accent-800);' : 'display:none;'}">${badge}</span>
+        <span style="${badge > 0 ? 'font-size:10px;padding:1px 6px;border-radius:8px;background:#fff;color:var(--color-accent-800);' : 'display:none;'}">${badge}</span>
       </button>`;
   }).join('');
 
   return `
-  <aside style="flex:0 0 238px;min-width:238px;border-right:2px solid var(--color-divider);display:flex;flex-direction:column;gap:16px">
+  <aside style="flex:0 0 238px;min-width:238px;border-right:1px solid var(--color-divider);display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-sm)">
     <div style="background:var(--color-accent);padding:16px 0;display:flex;flex-direction:column;gap:16px">
       <a href="https://studentdigs.co" target="_blank" rel="noopener" style="display:block;padding:0 16px 8px"><img src="logo-cream.png" alt="Student Digs — Garden Labour" style="width:100%;height:auto"></a>
       <nav style="display:flex;flex-direction:column">${navItems}</nav>
     </div>
-    <div style="margin-top:auto;padding:16px;border-top:2px solid var(--color-divider);display:flex;flex-direction:column;gap:8px">
+    <div style="margin-top:auto;padding:16px;border-top:1px solid var(--color-divider);display:flex;flex-direction:column;gap:8px">
       <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--color-neutral-700)">Owed to students</span>
       <span style="font-family:var(--font-heading);font-weight:800;font-size:26px;line-height:1">${money(owed.pay, { headline: true })}</span>
       <span style="font-size:11px;color:var(--color-neutral-700)">${owed.count} jobs · ${owed.students} students</span>
@@ -65,7 +65,7 @@ export function renderRightRail(state) {
   }
 
   return `
-  <aside style="flex:0 0 320px;min-width:280px;border-left:2px solid var(--color-divider);padding:16px;display:flex;flex-direction:column;gap:24px">
+  <aside style="flex:0 0 320px;min-width:280px;border-left:1px solid var(--color-divider);padding:16px;display:flex;flex-direction:column;gap:24px">
     ${top}
     ${chasePanel(state)}
     ${monthPanel(state, jobs)}

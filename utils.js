@@ -41,6 +41,7 @@ export function shortName(name) {
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DOW_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export function toDate(isoDateStr) {
   // isoDateStr like '2026-09-06' — construct as local date, not UTC, to avoid off-by-one.
@@ -72,6 +73,12 @@ export function dowFull(isoDateStr) {
 
 export function monthLabel(year, month0) {
   return `${MONTHS[month0]} ${year}`;
+}
+
+// Short axis label for the earnings chart — "Sep", or "Jan '27" across a year
+// boundary so a run of months spanning New Year's isn't ambiguous.
+export function monthShortLabel(year, month0) {
+  return month0 === 0 ? `Jan '${String(year).slice(2)}` : MONTHS_SHORT[month0];
 }
 
 export function daysAgo(isoDateStr) {

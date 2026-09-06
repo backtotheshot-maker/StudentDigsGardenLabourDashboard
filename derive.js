@@ -189,3 +189,45 @@ export function financeSummary(db, jobs) {
   const profit = revenue - payCosts - expensesTotal;
   return { revenue, payCosts, oneOffTotal, monthlyAccrued, expensesTotal, monthlyRunRate, profit };
 }
+
+// Trailing calendar-month buckets for the Home earnings chart — revenue and
+// profit per month, oldest first, always `monthsBack` long even where a
+// month has no jobs (zero-filled, not skipped, so the x-axis stays even).
+// Same recognition rule as financeSummary: a job counts in the month it was
+// completed. Monthly recurring expenses count in full for any month they
+// were active in at all (a lighter-weight approximation than financeSummary's
+// day-accurate `monthsElapsed`, appropriate for a trend chart rather than a
+// running total).
+export function monthlySeries(db, jobs, monthsBack = 6) {
+  const completed = jobs.filter((j) => j.status === 'completed');
+  const first = new Date();
+  first.setDate(1); // avoid month-length rollover when stepping by month
+
+  const months = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(first.getFullYear(), first.getMonth() - i, 1);
+    months.push({ year: d.getFullYear(), month0: d.getMonth() });
+  }
+
+  return months.map(({ year, month0 }) => {
+    const prefix = `${year}-${String(month0 + 1).padStart(2, '0')}`;
+    const monthJobs = completed.filter((j) => j.date.startsWith(prefix));
+    const revenue = monthJobs.reduce((s, j) => s + j.billed, 0);
+    const payCosts = monthJobs.reduce((s, j) => s + j.pay, 0);
+
+    const monthStart = isoDate(new Date(year, month0, 1));
+    const monthEnd = isoDate(new Date(year, month0 + 1, 0));
+    let expenses = 0;
+    for (const e of db.expenses || []) {
+      const amount = Number(e.amount || 0);
+      if (e.type === 'one_off') {
+        if (e.date >= monthStart && e.date <= monthEnd) expenses += amount;
+      } else if (e.date <= monthEnd && (!e.ended_date || e.ended_date >= monthStart)) {
+        expenses += amount;
+      }
+    }
+
+    const profit = revenue - payCosts - expenses;
+    return { year, month0, revenue, profit };
+  });
+}
