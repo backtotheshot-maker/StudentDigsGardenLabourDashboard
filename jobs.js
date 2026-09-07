@@ -41,6 +41,7 @@ export function renderJobs(state) {
         <td style="text-align:right">${hours(j.hours)}</td>
         <td style="text-align:right;font-family:var(--font-heading);font-weight:800">${money(j.pay)}</td>
         <td><span style="${tagStyle(tone)}">${label}</span></td>
+        <td style="text-align:right;font-family:var(--font-heading);font-weight:800;color:var(--color-accent-700)">+${money(j.billed - j.pay)}</td>
         <td style="text-align:right">${showMarkDone ? `<button class="btn btn-ghost" data-act="mark-done" data-id="${j.id}">Mark done</button>` : ''}</td>
       </tr>`;
   }).join('');
@@ -51,9 +52,9 @@ export function renderJobs(state) {
       <p style="margin:0 0 12px;font-size:13px;color:var(--color-neutral-700)">${NOTES[state.jobsFilter]}</p>
       <div class="seg" style="margin-bottom:16px">${seg}</div>
       <div style="overflow-x:auto;border-top:2px solid var(--color-divider)">
-        <table class="table" style="min-width:700px">
-          <thead><tr><th>When</th><th>Homeowner</th><th>Student</th><th style="text-align:right">Hours</th><th style="text-align:right">Pay</th><th>Status</th><th></th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="7" style="padding:16px 0;color:var(--color-neutral-700)">Nothing here.</td></tr>`}</tbody>
+        <table class="table" style="min-width:760px">
+          <thead><tr><th>When</th><th>Homeowner</th><th>Student</th><th style="text-align:right">Hours</th><th style="text-align:right">Pay</th><th>Status</th><th style="text-align:right">Profit</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="8" style="padding:16px 0;color:var(--color-neutral-700)">Nothing here.</td></tr>`}</tbody>
         </table>
       </div>
     </div>`;
