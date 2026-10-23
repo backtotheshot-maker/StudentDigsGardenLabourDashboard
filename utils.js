@@ -1,19 +1,31 @@
 // Formatting + small pure helpers shared across screens.
 
-export function money(amount, { headline = false } = {}) {
-  const n = Number(amount || 0);
-  return n.toLocaleString('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-    minimumFractionDigits: headline ? 0 : 2,
-    maximumFractionDigits: headline ? 0 : 2,
+// Display-only rounding: every number on screen shows exactly 1 decimal place,
+// cut down (never rounded up) — e.g. 33.99 shows as 33.9, 14 as 14.0. The
+// real values underneath (in the database and in every calculation) keep
+// their full precision; only what's printed is trimmed. The small epsilon
+// stops floating-point noise (e.g. 0.3 stored as 0.29999…) cutting a whole
+// tenth off a number that's actually exact. Negative numbers (a loss) are cut
+// towards zero, so -12.38 shows as -12.3.
+export function oneDp(value) {
+  const n = Number(value || 0);
+  const cut = Math.trunc(n * 10 + (n >= 0 ? 1e-9 : -1e-9)) / 10;
+  return (Object.is(cut, -0) ? 0 : cut).toLocaleString('en-GB', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
   });
 }
 
+// `headline` is kept so existing calls still work, but every amount now shows
+// to 1 decimal place either way (see oneDp above).
+export function money(amount, { headline = false } = {}) {
+  const n = Number(amount || 0);
+  const text = oneDp(Math.abs(n));
+  return n < 0 && text !== '0.0' ? `-£${text}` : `£${text}`;
+}
+
 export function hours(h) {
-  const n = Number(h || 0);
-  const trimmed = Number.isInteger(n) ? String(n) : String(n).replace(/0$/, '').replace(/\.$/, '');
-  return `${trimmed} hrs`;
+  return `${oneDp(h)} hrs`;
 }
 
 // The task description shown in tables/panels, with a visible flag when the

@@ -107,7 +107,7 @@ function dayPanel(state, jobs) {
   }
   const dayJobs = jobsOnDate(jobs, dayKey);
   const totalHours = dayJobs.reduce((s, j) => s + j.hours, 0);
-  const meta = dayJobs.length ? `${totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)} hrs booked` : 'nothing booked';
+  const meta = dayJobs.length ? `${hours(totalHours)} booked` : 'nothing booked';
   const rows = dayJobs.map((j) => `
     <div data-act="select-job" data-id="${j.id}" style="padding:9px 0;border-bottom:1px solid var(--color-divider);cursor:pointer">
       <div style="display:flex;justify-content:space-between;gap:8px">

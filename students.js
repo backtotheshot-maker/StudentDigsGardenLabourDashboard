@@ -19,7 +19,7 @@ function studentList(state) {
     const dotStyle = hasUpcoming
       ? 'width:9px;height:9px;border-radius:50%;background:var(--color-accent);display:inline-block'
       : 'width:9px;height:9px;border-radius:50%;border:1.5px solid var(--color-neutral-500);display:inline-block';
-    const thisWeek = hasUpcoming ? `${s.weekAheadHours % 1 === 0 ? s.weekAheadHours : s.weekAheadHours.toFixed(1)}h this week` : 'nothing this week';
+    const thisWeek = hasUpcoming ? `${hours(s.weekAheadHours)} this week` : 'nothing this week';
     return `
       <div data-act="open-student" data-id="${e.id}" class="sd-card-hover" style="border:1px solid var(--color-divider);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;align-items:center;gap:8px">

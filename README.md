@@ -194,6 +194,16 @@ Payments no longer have to go out as one big batch:
 As before, none of this moves money — you still transfer from your banking
 app, then mark it paid here.
 
+## Numbers on screen: 1 decimal place, rounded down
+
+Every amount and every hours figure on the dashboard is shown to exactly one
+decimal place, cut down rather than rounded — £33.99 shows as £33.9, 14 hours
+as 14.0 hrs. This is display-only: the database and all the calculations keep
+the full figures, so totals are always worked out from the real numbers and
+only trimmed at the very end. It all comes from `oneDp()` in `utils.js`,
+which `money()` and `hours()` both use. (Percentages, like the week-on-week
+hours trend and margin %, are still whole numbers.)
+
 ## Earnings chart
 
 The Home tab now has an "Earnings" chart between the top stat tiles and the

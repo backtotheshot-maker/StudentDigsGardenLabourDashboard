@@ -164,7 +164,7 @@ function earningsChart(monthly) {
 
   const zeroLine = hasNegative ? `
     <line x1="${padX}" y1="${zeroY}" x2="${W - padX}" y2="${zeroY}" stroke="var(--color-divider)" stroke-width="1" stroke-dasharray="3,3"/>
-    <text x="${padX}" y="${zeroY - 4}" font-size="9" fill="var(--color-neutral-700)">£0</text>` : '';
+    <text x="${padX}" y="${zeroY - 4}" font-size="9" fill="var(--color-neutral-700)">£0.0</text>` : '';
 
   const legend = `
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:6px">
