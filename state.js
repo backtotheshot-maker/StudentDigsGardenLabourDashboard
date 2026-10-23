@@ -8,6 +8,7 @@ export const state = {
   screen: 'home', // home | calendar | handovers | jobs | payments | students | homeowners
   // home
   showExpenseForm: false,
+  earnRange: 6, // months shown on the Home earnings chart: 3 | 6 | 12
   // calendar
   calView: 'month',
   calYear: now.getFullYear(),

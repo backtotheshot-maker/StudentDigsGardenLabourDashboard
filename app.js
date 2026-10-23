@@ -277,6 +277,10 @@ function onClick(e) {
       render();
       break;
     }
+    case 'earn-range':
+      setState({ earnRange: Number(t.dataset.months) || 6 });
+      render();
+      break;
     case 'toggle-expense-form':
       setState({ showExpenseForm: !state.showExpenseForm });
       render();

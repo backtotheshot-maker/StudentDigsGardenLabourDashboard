@@ -213,20 +213,27 @@ more in it than fits on screen, it scrolls on its own. On narrow screens
 (under 1000px wide), where the columns stack, they go back to scrolling
 normally. This is the `.rail-fixed` class at the bottom of `modernist.css`.
 
-## Earnings chart
+## Earnings card
 
-The Home tab now has an "Earnings" chart between the top stat tiles and the
-week strip — revenue (bars) and profit (the line) for each of the last 6
-calendar months, including the current one in progress. Hover any bar or
-point for the exact figure; a dashed line at £0 only appears if profit dips
-below it in that window, so a normal, profitable stretch doesn't show a
-line you don't need. It's a hand-drawn SVG (no charting library, same
-zero-dependency approach as the rest of the app), built from `derive.js`'s
-new `monthlySeries()` — a lighter-weight month-by-month version of the same
-revenue/profit rules `financeSummary` uses for the all-time totals above it
-(recognised on completion, expenses counted where they were active that
-month), so it's a trend view rather than a running ledger; the two won't
-add up to the all-time figures and aren't meant to.
+The Home tab's earnings card (design "A2" from the drafts):
+
+- **Headline: this month's profit so far** — revenue minus student pay minus
+  expenses for the current month, with this month's revenue and the % of
+  revenue you kept underneath.
+- **Pace pill** — this month's profit up to today's date vs last month's
+  profit up to the same date ("▲ 12.4% ahead of September at this point").
+  Hidden if last month had no profit by that day to compare with.
+- **Chart** — revenue as the main line (glowing blue, with a faint fill
+  under it), profit as small bars underneath on the same scale, and the
+  current month dashed because it isn't finished. The best month gets a
+  label; hover any point or bar for the exact figure. A loss month shows its
+  profit bar in red, below £0.
+- **3M / 6M / 12M** buttons switch how many months are shown.
+
+The blues are deliberately local to this card (the `EARN` colours at the
+top of its code in `home.js`) — the rest of the dashboard keeps its green
+theme. Figures come from `monthlySeries()` and `monthToDate()` in
+`derive.js`.
 
 ## Colours
 

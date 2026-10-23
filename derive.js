@@ -250,3 +250,26 @@ export function monthlySeries(db, jobs, monthsBack = 6) {
     return { year, month0, revenue, profit };
   });
 }
+
+// Revenue / profit for one month up to and including `day` (1-31), using the
+// same rules as monthlySeries: completed jobs by their date, one-off expenses
+// on their date, monthly expenses counted in full once they're active that
+// month. Used for the "ahead of / behind last month at this point" pill.
+export function monthToDate(db, jobs, year, month0, day) {
+  const lastDay = new Date(year, month0 + 1, 0).getDate();
+  const cutoff = isoDate(new Date(year, month0, Math.min(day, lastDay)));
+  const monthStart = isoDate(new Date(year, month0, 1));
+  const done = jobs.filter((j) => j.status === 'completed' && j.date >= monthStart && j.date <= cutoff);
+  const revenue = done.reduce((s, j) => s + j.billed, 0);
+  const payCosts = done.reduce((s, j) => s + j.pay, 0);
+  let expenses = 0;
+  for (const e of db.expenses || []) {
+    const amount = Number(e.amount || 0);
+    if (e.type === 'one_off') {
+      if (e.date >= monthStart && e.date <= cutoff) expenses += amount;
+    } else if (e.date <= cutoff && (!e.ended_date || e.ended_date >= monthStart)) {
+      expenses += amount;
+    }
+  }
+  return { revenue, profit: revenue - payCosts - expenses };
+}
