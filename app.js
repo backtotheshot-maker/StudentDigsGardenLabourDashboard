@@ -1,5 +1,5 @@
 import { fetchAll, markJobDone, setReview, confirmAll as dbConfirmAll, nudgeHandover, sendPaymentRun, updateEmployeeBank, addExpense, stopExpense, deleteExpense } from './db.js';
-import { enrichJobs, owedSummary, paymentGroups } from './derive.js';
+import { enrichJobs, readySummary, paymentGroups } from './derive.js';
 import { state, setState, goScreen } from './state.js';
 import { renderLeftRail, renderRightRail } from './rails.js';
 import { renderHome } from './home.js';
@@ -193,20 +193,47 @@ function onClick(e) {
       render();
       break;
     }
+    case 'pay-toggle-job': {
+      const id = t.dataset.id;
+      const payExcluded = { ...state.payExcluded };
+      if (payExcluded[id]) delete payExcluded[id]; else payExcluded[id] = true;
+      setState({ payExcluded });
+      render();
+      break;
+    }
+    case 'dismiss-last-paid':
+      setState({ lastPaid: null });
+      render();
+      break;
+    case 'send-payment-student': {
+      // Pays just one student: only their ticked jobs are marked paid, and
+      // only their top-up is cleared. Everyone else stays waiting.
+      const empId = t.dataset.emp;
+      const groups = paymentGroups(readySummary(jobs()).jobs, state.topUps, state.payExcluded);
+      const g = groups.find((x) => x.employee.id === empId);
+      if (!g || !g.jobs.length) break;
+      const topUps = { ...state.topUps };
+      delete topUps[empId];
+      withRefresh(async () => {
+        await sendPaymentRun([{ jobIds: g.jobs.map((j) => j.id) }]);
+        setState({ topUps, lastPaid: { name: g.employee.name, total: g.pay, jobs: g.jobs.length } });
+      });
+      break;
+    }
     case 'send-payment': {
-      const owed = owedSummary(jobs());
-      const groups = paymentGroups(owed.jobs, state.topUps);
+      const groups = paymentGroups(readySummary(jobs()).jobs, state.topUps, state.payExcluded).filter((g) => g.jobs.length);
       if (!groups.length) break;
       const snapshot = {
         total: groups.reduce((s, g) => s + g.pay, 0),
         students: groups.length,
       };
       const jobRows = groups.map((g) => ({ jobIds: g.jobs.map((j) => j.id) }));
+      const topUps = { ...state.topUps };
+      for (const g of groups) delete topUps[g.employee.id];
       withRefresh(async () => {
-        // Just flips the relevant jobs to paid — no separate payments-table
-        // bookkeeping row, so there's nothing else here that can fail.
+        // Just flips the ticked jobs to paid — unticked jobs stay waiting.
         await sendPaymentRun(jobRows);
-        setState({ paid: true, topUps: {}, sentSnapshot: snapshot });
+        setState({ paid: true, topUps, lastPaid: null, sentSnapshot: snapshot });
       });
       break;
     }
@@ -219,7 +246,7 @@ function onClick(e) {
       break;
     }
     case 'pay-done':
-      setState({ paid: false, payStep: 0 });
+      setState({ paid: false, payStep: 0, lastPaid: null });
       goScreen('calendar');
       render();
       break;

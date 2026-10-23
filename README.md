@@ -173,6 +173,27 @@ their bank details, so it's obvious before you start paying.
   up to do that. It's a personal reminder to yourself that you've followed up,
   not a notification to them.
 
+## Paying one student at a time
+
+Payments no longer have to go out as one big batch:
+
+- **Only confirmed jobs get paid.** A job a student has marked done still
+  counts as owed (badges, the right-hand "owed" panel, their Students page),
+  but it only appears on steps 2 and 3 of the payment run once you've pressed
+  **Confirm** on it in step 1. Unconfirmed jobs just wait there.
+- **Each student has their own card on "Send it"**, listing their confirmed
+  jobs with a tick box each (all ticked by default) and their own
+  **Mark [name] paid** button. Pressing it marks only that student's ticked
+  jobs as paid and clears only their top-up; everyone else stays on the list
+  for later. A green note confirms who you just marked paid.
+- **Untick a job to hold it back.** It stays on that student's card, unpaid,
+  until you tick it and pay it another time.
+- **"Mark everyone paid"** is still there at the bottom when more than one
+  student is waiting, for when you do want to settle the lot in one go.
+
+As before, none of this moves money — you still transfer from your banking
+app, then mark it paid here.
+
 ## Earnings chart
 
 The Home tab now has an "Earnings" chart between the top stat tiles and the

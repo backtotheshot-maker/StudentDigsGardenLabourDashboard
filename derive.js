@@ -47,20 +47,39 @@ export function owedSummary(jobs) {
   return { pay, count: payable.length, students: students.size, jobs: payable };
 }
 
-// Groups already-payable jobs (i.e. owedSummary(jobs).jobs) by employee, with
-// any top-up folded into `pay`. Shared by the payments screen (what's shown)
-// and app.js (what's sent/exported), so both always agree on who's being paid
-// and for how much.
-export function paymentGroups(payableJobs, topUps = {}) {
+// A job only goes through to a payment run once it's been explicitly
+// confirmed on step 1 — unconfirmed jobs still count as owed (above) but wait
+// on the Check step until you've confirmed them.
+export function isReadyToPay(job) {
+  return job.stage === 'done' && job.review_status === 'confirmed';
+}
+
+export function readySummary(jobs) {
+  const ready = jobs.filter(isReadyToPay);
+  const pay = ready.reduce((s, j) => s + j.pay, 0);
+  const students = new Set(ready.map((j) => j.employee_id));
+  return { pay, count: ready.length, students: students.size, jobs: ready };
+}
+
+// Groups ready-to-pay jobs by employee, with any top-up folded into `pay`.
+// `excluded` is a map of jobId -> true for jobs unticked on the Send step:
+// they stay listed (`allJobs`) but don't count towards that student's `pay`
+// and aren't marked paid. Shared by the payments screen (what's shown) and
+// app.js (what's marked paid), so both always agree on who's being paid and
+// for how much.
+export function paymentGroups(readyJobs, topUps = {}, excluded = {}) {
   const byEmp = {};
-  for (const j of payableJobs) (byEmp[j.employee_id] ||= { employee: j.employee, jobs: [] }).jobs.push(j);
+  for (const j of readyJobs) (byEmp[j.employee_id] ||= { employee: j.employee, jobs: [] }).jobs.push(j);
   return Object.values(byEmp)
     .filter((g) => g.employee)
     .map((g) => {
-      const basePay = g.jobs.reduce((s, j) => s + j.pay, 0);
-      const topUp = topUps[g.employee.id] || 0;
-      return { employee: g.employee, jobs: g.jobs, pay: basePay + topUp, topUp };
-    });
+      const allJobs = g.jobs.sort((a, b) => a.date.localeCompare(b.date));
+      const selected = allJobs.filter((j) => !excluded[j.id]);
+      const basePay = selected.reduce((s, j) => s + j.pay, 0);
+      const topUp = selected.length ? (topUps[g.employee.id] || 0) : 0;
+      return { employee: g.employee, allJobs, jobs: selected, pay: basePay + topUp, topUp };
+    })
+    .sort((a, b) => a.employee.name.localeCompare(b.employee.name));
 }
 
 export function handoverList(db) {

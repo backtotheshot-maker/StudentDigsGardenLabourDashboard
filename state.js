@@ -23,6 +23,8 @@ export const state = {
   sentSnapshot: null,
   reviewDraft: {}, // jobId -> 'confirmed' | 'queried' (unsent local overlay, cleared on send)
   topUps: {}, // employeeId -> number
+  payExcluded: {}, // jobId -> true for jobs unticked on the Send step
+  lastPaid: null, // { name, total, jobs } — note shown after paying one student
   // students screen
   stuId: null,
   // ui
