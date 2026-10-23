@@ -204,6 +204,15 @@ only trimmed at the very end. It all comes from `oneDp()` in `utils.js`,
 which `money()` and `hours()` both use. (Percentages, like the week-on-week
 hours trend and margin %, are still whole numbers.)
 
+## Side columns pinned to the screen
+
+The left column (logo, tabs, "Owed to students") and the right column (day
+panel, To chase, This month) are both fixed to the height of the browser
+window — only the middle section scrolls with the page. If either column has
+more in it than fits on screen, it scrolls on its own. On narrow screens
+(under 1000px wide), where the columns stack, they go back to scrolling
+normally. This is the `.rail-fixed` class at the bottom of `modernist.css`.
+
 ## Earnings chart
 
 The Home tab now has an "Earnings" chart between the top stat tiles and the

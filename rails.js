@@ -37,7 +37,7 @@ export function renderLeftRail(state) {
   }).join('');
 
   return `
-  <aside style="flex:0 0 238px;min-width:238px;border-right:1px solid var(--color-divider);display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-sm)">
+  <aside class="rail-fixed" style="flex:0 0 238px;min-width:238px;border-right:1px solid var(--color-divider);display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow-sm)">
     <div style="background:var(--color-accent);padding:16px 0;display:flex;flex-direction:column;gap:16px">
       <a href="https://studentdigs.co" target="_blank" rel="noopener" style="display:block;padding:0 16px 8px"><img src="logo-cream.png" alt="Student Digs — Garden Labour" style="width:100%;height:auto"></a>
       <nav style="display:flex;flex-direction:column">${navItems}</nav>
@@ -65,7 +65,7 @@ export function renderRightRail(state) {
   }
 
   return `
-  <aside style="flex:0 0 320px;min-width:280px;border-left:1px solid var(--color-divider);padding:16px;display:flex;flex-direction:column;gap:24px">
+  <aside class="rail-fixed" style="flex:0 0 320px;min-width:280px;border-left:1px solid var(--color-divider);padding:16px;display:flex;flex-direction:column;gap:24px">
     ${top}
     ${chasePanel(state)}
     ${monthPanel(state, jobs)}

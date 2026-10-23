@@ -265,3 +265,19 @@ textarea.input { min-height: 90px; resize: vertical; }
 .dialog-body { font-size: 14px; opacity: 0.85; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
 
+
+/* Side columns stay pinned to the screen height while the middle scrolls.
+   Each column scrolls on its own if its contents are taller than the screen.
+   On narrow screens (where the columns stack) they go back to normal flow. */
+.rail-fixed {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+@media (max-width: 1000px) {
+  .rail-fixed { position: static; height: auto; overflow-y: visible; }
+}
