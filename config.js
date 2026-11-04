@@ -12,3 +12,10 @@ export const SUPABASE_ANON_KEY =
 // and that lives in business_settings since it's already a DB-editable rule.)
 export const EMPLOYEE_PAY_RATE = 14;
 export const CLIENT_CHARGE_RATE = 16;
+
+// The right-hand "To chase" panel only lists homeowners handed to these
+// students (by employee id, so it still works if a name is edited).
+// Currently just Joe Hammond. Add more ids to this list to include others,
+// or empty it ([]) to show everyone again. The Handovers page itself still
+// shows every handover.
+export const CHASE_EMPLOYEE_IDS = ['eaf316d3-8412-4779-84d4-04fd4769655d']; // Joe Hammond

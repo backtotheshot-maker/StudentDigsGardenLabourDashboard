@@ -213,6 +213,14 @@ more in it than fits on screen, it scrolls on its own. On narrow screens
 (under 1000px wide), where the columns stack, they go back to scrolling
 normally. This is the `.rail-fixed` class at the bottom of `modernist.css`.
 
+## "To chase" panel — Joe Hammond only
+
+The "To chase" panel on the right only lists homeowners handed over to Joe
+Hammond who haven't been booked in yet. Everyone else's handovers are still
+on the Handovers page, and still count towards its badge. To change who
+appears, edit `CHASE_EMPLOYEE_IDS` in `config.js` (employee ids from the
+`employees` table); an empty list shows everyone again.
+
 ## Job status colours
 
 Every job's box and status tag uses the same three colours across the

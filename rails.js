@@ -1,4 +1,5 @@
 import { money, hours, dayLabel, fmtTime, tagStyle, statusTone, escapeHtml, workLabel } from './utils.js';
+import { CHASE_EMPLOYEE_IDS } from './config.js';
 import { enrichJobs, handoverList, owedSummary, jobsOnDate, jobsInMonth } from './derive.js';
 
 const NAV = [
@@ -127,7 +128,10 @@ function dayPanel(state, jobs) {
 }
 
 function chasePanel(state) {
-  const list = handoverList(state.db).filter((h) => !h.chasedToday).slice(0, 6);
+  const list = handoverList(state.db)
+    .filter((h) => !h.chasedToday)
+    .filter((h) => !CHASE_EMPLOYEE_IDS.length || CHASE_EMPLOYEE_IDS.includes(h.primary_employee_id))
+    .slice(0, 6);
   const rows = list.map((h) => `
     <div style="padding:9px 0;border-bottom:1px solid var(--color-divider);display:flex;flex-direction:column;gap:5px">
       <span style="font-family:var(--font-heading);font-weight:800;font-size:14px">${escapeHtml(h.name)}</span>
@@ -143,7 +147,7 @@ function chasePanel(state) {
       <h2 style="font-size:17px;margin:0">To chase</h2>
       <span style="font-size:11px;color:var(--color-neutral-700)">${list.length} waiting</span>
     </div>
-    ${rows || `<p style="font-size:13px;color:var(--color-neutral-700);margin:12px 0 0">All handovers are booked in.</p>`}
+    ${rows || `<p style="font-size:13px;color:var(--color-neutral-700);margin:12px 0 0">Nothing to chase for Joe right now.</p>`}
   </div>`;
 }
 
