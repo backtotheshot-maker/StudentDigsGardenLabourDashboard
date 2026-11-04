@@ -124,21 +124,32 @@ export function fmtTime(t) {
   return t ? t.slice(0, 5) : '';
 }
 
+export const JOB_COLOURS = {
+  booked: { bg: '#dbeafe', edge: '#2563eb', ink: '#1e3a8a' },
+  unpaid: { bg: '#fee2e2', edge: '#dc2626', ink: '#7f1d1d' },
+  paid: { bg: '#dcfce7', edge: '#16a34a', ink: '#14532d' },
+};
+
 export function tagStyle(tone) {
   const base = 'display:inline-flex;font-size:11px;padding:3px 9px;white-space:nowrap;';
   const tones = {
     good: 'background:var(--color-accent-100);color:var(--color-accent-800);',
     warn: 'background:var(--color-accent-2-200);color:var(--color-accent-2-800);',
     flat: 'background:var(--color-neutral-200);color:var(--color-neutral-800);',
+    // Job-status colours (calendar, jobs list, students, job panel):
+    // blue = booked for the future, red = done but unpaid, green = done and paid.
+    booked: `background:${JOB_COLOURS.booked.bg};color:${JOB_COLOURS.booked.ink};`,
+    unpaid: `background:${JOB_COLOURS.unpaid.bg};color:${JOB_COLOURS.unpaid.ink};`,
+    paid: `background:${JOB_COLOURS.paid.bg};color:${JOB_COLOURS.paid.ink};`,
   };
   return base + (tones[tone] || tones.flat);
 }
 
 export function statusTone(status) {
   // booked | done | paid  ->  chip tone used on calendar chips / job rows
-  if (status === 'booked') return { tone: 'good', label: 'Booked' };
-  if (status === 'done') return { tone: 'warn', label: 'Done, to pay' };
-  if (status === 'paid') return { tone: 'flat', label: 'Paid' };
+  if (status === 'booked') return { tone: 'booked', label: 'Booked' };
+  if (status === 'done') return { tone: 'unpaid', label: 'Done, unpaid' };
+  if (status === 'paid') return { tone: 'paid', label: 'Paid' };
   return { tone: 'flat', label: status || '—' };
 }
 

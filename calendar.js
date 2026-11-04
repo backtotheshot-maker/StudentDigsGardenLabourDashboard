@@ -1,4 +1,4 @@
-import { money, hours, shortName, initials, fmtTime, tagStyle, statusTone, monthLabel, isoDate, dowMon0, escapeHtml, workLabel } from './utils.js';
+import { money, hours, shortName, initials, fmtTime, tagStyle, statusTone, monthLabel, isoDate, dowMon0, escapeHtml, workLabel, JOB_COLOURS } from './utils.js';
 import { enrichJobs, monthWindow, jobsInMonth, jobsOnDate } from './derive.js';
 
 const DOW_HEADS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -83,17 +83,16 @@ function monthView(state, jobs) {
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:2px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">${headRow}</div>
       <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-left:1px solid var(--color-divider)">${cellsHtml}</div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--color-neutral-700);margin-top:12px">
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;background:var(--color-accent-200);border-left:3px solid var(--color-accent);display:inline-block"></span>Booked</span>
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;background:var(--color-accent-2-200);border-left:3px solid var(--color-accent-2-600);display:inline-block"></span>Done, to pay</span>
-        <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;background:var(--color-neutral-200);border-left:3px solid var(--color-neutral-500);display:inline-block"></span>Paid</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;background:${JOB_COLOURS.booked.bg};border-left:3px solid ${JOB_COLOURS.booked.edge};display:inline-block"></span>Booked (upcoming)</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;background:${JOB_COLOURS.unpaid.bg};border-left:3px solid ${JOB_COLOURS.unpaid.edge};display:inline-block"></span>Done, unpaid</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;background:${JOB_COLOURS.paid.bg};border-left:3px solid ${JOB_COLOURS.paid.edge};display:inline-block"></span>Done and paid</span>
       </div>
     </div>`;
 }
 
 function tagBg(tone) {
-  if (tone === 'good') return 'background:var(--color-accent-200);border-left:3px solid var(--color-accent);color:var(--color-accent-800);';
-  if (tone === 'warn') return 'background:var(--color-accent-2-200);border-left:3px solid var(--color-accent-2-600);color:var(--color-accent-2-800);';
-  return 'background:var(--color-neutral-200);border-left:3px solid var(--color-neutral-500);color:var(--color-neutral-800);';
+  const c = JOB_COLOURS[tone] || JOB_COLOURS.booked;
+  return `background:${c.bg};border-left:3px solid ${c.edge};color:${c.ink};`;
 }
 
 function agendaView(state, jobs) {

@@ -213,6 +213,21 @@ more in it than fits on screen, it scrolls on its own. On narrow screens
 (under 1000px wide), where the columns stack, they go back to scrolling
 normally. This is the `.rail-fixed` class at the bottom of `modernist.css`.
 
+## Job status colours
+
+Every job's box and status tag uses the same three colours across the
+calendar, the agenda view, the Jobs list, the Students page and the job
+panel on the right:
+
+- **Blue — Booked:** a job logged for the future (`status = 'upcoming'`).
+- **Red — Done, unpaid:** the student has marked it done but you haven't
+  marked it paid yet.
+- **Green — Done and paid.**
+
+The colours live in `JOB_COLOURS` in `utils.js` if you ever want to tweak
+the shades. Other tags (e.g. "Waiting on student" on Handovers) keep their
+original colours.
+
 ## Earnings card
 
 The Home tab's earnings card (design "A2" from the drafts):
