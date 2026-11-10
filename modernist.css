@@ -281,3 +281,16 @@ textarea.input { min-height: 90px; resize: vertical; }
 @media (max-width: 1000px) {
   .rail-fixed { position: static; height: auto; overflow-y: visible; }
 }
+
+/* Home earnings chart: hover a month to see its figures. Each month is a
+   full-height column; its guide line + tooltip are hidden until hovered
+   (or kept visible when that month is picked). */
+.earn-col { cursor: pointer; }
+.earn-col .earn-hover { opacity: 0; transition: opacity 0.12s ease; pointer-events: none; }
+.earn-col:hover .earn-hover,
+.earn-col:focus .earn-hover { opacity: 1; }
+.earn-col:hover .earn-guide { opacity: 1; }
+.earn-col .earn-guide { opacity: 0; transition: opacity 0.12s ease; }
+.earn-col.is-picked .earn-guide { opacity: 1; }
+.earn-col:focus { outline: none; }
+.earn-col:focus-visible .earn-hit { stroke: #1d4ed8; stroke-width: 2; }

@@ -217,14 +217,16 @@ export function financeSummary(db, jobs) {
 // were active in at all (a lighter-weight approximation than financeSummary's
 // day-accurate `monthsElapsed`, appropriate for a trend chart rather than a
 // running total).
-export function monthlySeries(db, jobs, monthsBack = 6) {
+// `endOffset` moves the whole window back in time: 0 = ends this month,
+// 1 = ends last month, and so on (used by the ‹ › arrows on the chart).
+export function monthlySeries(db, jobs, monthsBack = 6, endOffset = 0) {
   const completed = jobs.filter((j) => j.status === 'completed');
   const first = new Date();
   first.setDate(1); // avoid month-length rollover when stepping by month
 
   const months = [];
   for (let i = monthsBack - 1; i >= 0; i--) {
-    const d = new Date(first.getFullYear(), first.getMonth() - i, 1);
+    const d = new Date(first.getFullYear(), first.getMonth() - i - endOffset, 1);
     months.push({ year: d.getFullYear(), month0: d.getMonth() });
   }
 
@@ -247,7 +249,8 @@ export function monthlySeries(db, jobs, monthsBack = 6) {
     }
 
     const profit = revenue - payCosts - expenses;
-    return { year, month0, revenue, profit };
+    const hours = monthJobs.reduce((s, j) => s + j.hours, 0);
+    return { year, month0, revenue, profit, payCosts, expenses, hours, jobs: monthJobs.length };
   });
 }
 

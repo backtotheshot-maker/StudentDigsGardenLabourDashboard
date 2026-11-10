@@ -277,8 +277,22 @@ function onClick(e) {
       render();
       break;
     }
-    case 'earn-range':
-      setState({ earnRange: Number(t.dataset.months) || 6 });
+    case 'earn-pick': {
+      // Clicking a month on the chart makes it the headline; clicking the
+      // already-picked month goes back to this month.
+      const key = t.dataset.key;
+      setState({ earnSel: state.earnSel === key ? null : key });
+      render();
+      break;
+    }
+    case 'earn-shift': {
+      const earnOffset = Math.max(0, (state.earnOffset || 0) + Number(t.dataset.dir || 0));
+      setState({ earnOffset, earnSel: null });
+      render();
+      break;
+    }
+    case 'earn-now':
+      setState({ earnOffset: 0, earnSel: null });
       render();
       break;
     case 'toggle-expense-form':

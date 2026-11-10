@@ -100,33 +100,61 @@ const EARN = {
   track: '#eef3fb',
 };
 
+const EARN_MONTHS = 6;
+const LONG_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const monthKey = (m) => `${m.year}-${String(m.month0 + 1).padStart(2, '0')}`;
+
 function earningsSection(state, jobs) {
   const db = state.db;
-  const range = [3, 6, 12].includes(state.earnRange) ? state.earnRange : 6;
-  const monthly = monthlySeries(db, jobs, range);
+  const offset = Math.max(0, state.earnOffset || 0);
+  const monthly = monthlySeries(db, jobs, EARN_MONTHS, offset);
   const hasAny = monthly.some((m) => m.revenue !== 0 || m.profit !== 0);
 
   const now = new Date();
-  const cur = monthly[monthly.length - 1];
-  const monthName = now.toLocaleString('en-GB', { month: 'long' });
-  const kept = cur.revenue > 0 ? Math.trunc((cur.profit / cur.revenue) * 1000) / 10 : null;
+  const thisKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  // Pace: this month's profit so far vs last month's profit by the same day.
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevName = prev.toLocaleString('en-GB', { month: 'long' });
-  const thisSoFar = monthToDate(db, jobs, now.getFullYear(), now.getMonth(), now.getDate()).profit;
-  const lastSoFar = monthToDate(db, jobs, prev.getFullYear(), prev.getMonth(), now.getDate()).profit;
+  // Which month the headline shows: the one clicked on the chart, else this
+  // month if it's in view, else the latest month in view.
+  let selIdx = monthly.findIndex((m) => monthKey(m) === state.earnSel);
+  if (selIdx < 0) selIdx = monthly.length - 1;
+  const sel = monthly[selIdx];
+  const isThisMonth = monthKey(sel) === thisKey;
+  const selName = LONG_MONTHS[sel.month0];
+  const kept = sel.revenue > 0 ? Math.trunc((sel.profit / sel.revenue) * 1000) / 10 : null;
+
+  // Pill: this month → pace vs last month by the same date; a past month →
+  // its full total vs the month before it.
+  const prevD = new Date(sel.year, sel.month0 - 1, 1);
+  const prevName = LONG_MONTHS[prevD.getMonth()];
+  let a, b, suffix;
+  if (isThisMonth) {
+    a = monthToDate(db, jobs, now.getFullYear(), now.getMonth(), now.getDate()).profit;
+    b = monthToDate(db, jobs, prevD.getFullYear(), prevD.getMonth(), now.getDate()).profit;
+    suffix = `${prevName} at this point`;
+  } else {
+    a = sel.profit;
+    b = selIdx > 0 ? monthly[selIdx - 1].profit : monthlySeries(db, jobs, 1, offset + EARN_MONTHS)[0].profit;
+    suffix = prevName;
+  }
   let pill = '';
-  if (lastSoFar > 0) {
-    const pct = Math.trunc(((thisSoFar - lastSoFar) / lastSoFar) * 1000) / 10;
+  if (b > 0) {
+    const pct = Math.trunc(((a - b) / b) * 1000) / 10;
     const up = pct >= 0;
-    pill = `<span style="display:inline-flex;align-self:flex-start;align-items:center;gap:6px;background:${up ? EARN.pillBg : EARN.downBg};color:${up ? EARN.pillInk : EARN.downInk};border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% ${up ? 'ahead of' : 'behind'} ${prevName} at this point</span>`;
+    pill = `<span style="display:inline-flex;align-self:flex-start;align-items:center;gap:6px;background:${up ? EARN.pillBg : EARN.downBg};color:${up ? EARN.pillInk : EARN.downInk};border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% ${up ? (isThisMonth ? 'ahead of' : 'up on') : (isThisMonth ? 'behind' : 'down on')} ${suffix}</span>`;
   }
 
-  const toggle = [3, 6, 12].map((m) => {
-    const on = m === range;
-    return `<button data-act="earn-range" data-months="${m}" aria-pressed="${on}" style="border:0;border-radius:7px;padding:6px 12px;font:${on ? 800 : 600} 12px var(--font-heading);cursor:pointer;${on ? `background:linear-gradient(110deg,${EARN.blue},#2563eb 70%,${EARN.indigo});color:#fff` : `background:transparent;color:${EARN.muted}`}">${m}M</button>`;
-  }).join('');
+  const first = monthly[0], last = monthly[monthly.length - 1];
+  const rangeLabel = `${LONG_MONTHS[first.month0].slice(0, 3)}${first.year !== last.year ? ' ' + first.year : ''} – ${LONG_MONTHS[last.month0].slice(0, 3)} ${last.year}`;
+  const arrowBtn = (dir, label, disabled) => `<button data-act="earn-shift" data-dir="${dir}" aria-label="${label}" ${disabled ? 'disabled' : ''} style="border:0;border-radius:7px;width:30px;height:30px;font:800 15px var(--font-heading);cursor:${disabled ? 'default' : 'pointer'};background:${disabled ? 'transparent' : '#fff'};color:${disabled ? 'rgba(74,84,112,0.35)' : EARN.blue};box-shadow:${disabled ? 'none' : '0 1px 2px rgba(20,26,46,0.08)'}">${dir > 0 ? '‹' : '›'}</button>`;
+  const nav = `
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      ${offset > 0 || state.earnSel ? `<button data-act="earn-now" style="border:0;background:transparent;color:${EARN.blue};font:700 12px var(--font-heading);cursor:pointer;padding:6px 8px">Back to this month</button>` : ''}
+      <div style="display:flex;align-items:center;gap:4px;background:${EARN.track};border-radius:10px;padding:4px">
+        ${arrowBtn(1, 'Show earlier months', false)}
+        <span style="font:800 12px var(--font-heading);color:${EARN.ink};min-width:118px;text-align:center">${rangeLabel}</span>
+        ${arrowBtn(-1, 'Show later months', offset === 0)}
+      </div>
+    </div>`;
 
   const stat = (value, label) => `<div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--font-heading);font-size:18px;font-weight:800;color:${EARN.muted}">${value}</span><span style="font-size:11px;color:${EARN.muted}">${label}</span></div>`;
 
@@ -136,23 +164,25 @@ function earningsSection(state, jobs) {
         <div style="border-radius:calc(var(--radius-lg) - 1px);background:radial-gradient(60% 70% at 100% 0%,rgba(56,189,248,0.07),rgba(255,255,255,0) 70%),#fff;box-shadow:0 1px 3px rgba(20,26,46,0.06),0 8px 24px rgba(29,78,216,0.06);padding:20px 22px;display:flex;flex-direction:column;gap:14px;color:${EARN.ink}">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
             <h2 style="font-size:20px;margin:0">Earnings</h2>
-            <div role="group" aria-label="Months shown" style="display:flex;gap:4px;background:${EARN.track};border-radius:10px;padding:4px">${toggle}</div>
+            ${nav}
           </div>
           <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
             <div style="flex:0 1 220px;min-width:200px;display:flex;flex-direction:column;gap:16px">
               <div style="display:flex;flex-direction:column;gap:4px">
-                <span style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${EARN.muted}">${escapeHtml(monthName)} profit so far</span>
-                <span style="font-family:var(--font-heading);font-size:48px;font-weight:800;line-height:1;background:linear-gradient(100deg,${EARN.navy} 0%,${EARN.blue} 55%,#4f46e5 100%);-webkit-background-clip:text;background-clip:text;color:transparent">${money(cur.profit)}</span>
+                <span style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${EARN.muted}">${selName}${sel.year !== now.getFullYear() ? ' ' + sel.year : ''} profit${isThisMonth ? ' so far' : ''}</span>
+                <span style="font-family:var(--font-heading);font-size:48px;font-weight:800;line-height:1;background:linear-gradient(100deg,${EARN.navy} 0%,${EARN.blue} 55%,#4f46e5 100%);-webkit-background-clip:text;background-clip:text;color:transparent">${money(sel.profit)}</span>
                 <span style="font-size:12px;color:${EARN.muted}">kept after student pay and expenses</span>
               </div>
               ${pill}
-              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border-top:1px solid rgba(20,26,46,0.10);padding-top:12px">
-                ${stat(money(cur.revenue), 'revenue')}
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;border-top:1px solid rgba(20,26,46,0.10);padding-top:12px">
+                ${stat(money(sel.revenue), 'revenue')}
                 ${stat(kept == null ? '—' : `${kept.toFixed(1)}%`, 'of revenue kept')}
+                ${stat(String(sel.jobs), sel.jobs === 1 ? 'job done' : 'jobs done')}
+                ${stat(hours(sel.hours), 'worked')}
               </div>
             </div>
             <div style="flex:1 1 380px;min-width:0">
-              ${hasAny ? earningsChart(monthly) : `<p style="font-size:13px;color:${EARN.muted};margin:8px 0">Nothing completed yet in this window — this fills in as jobs are marked done.</p>`}
+              ${hasAny ? earningsChart(monthly, selIdx, offset === 0) : `<p style="font-size:13px;color:${EARN.muted};margin:8px 0">Nothing completed in these months — use ‹ › to look at other months.</p>`}
             </div>
           </div>
         </div>
@@ -177,7 +207,7 @@ function axisMoney(v) {
   return `£${v}`;
 }
 
-function earningsChart(monthly) {
+function earningsChart(monthly, selIdx, endsThisMonth) {
   const W = 620, H = 270;
   const padL = 44, padR = 14, padTop = 34, padBottom = 30;
   const plotW = W - padL - padR;
@@ -203,66 +233,76 @@ function earningsChart(monthly) {
     grid.push(`<text x="${padL - 8}" y="${y + 3.5}" text-anchor="end" font-size="10" fill="${EARN.muted}">${axisMoney(v)}</text>`);
   }
 
+  // When the window ends on this month, that month is still running, so its
+  // segment is dashed. Looking back at older months, the line is all solid.
   const pts = monthly.map((m, i) => ({ x: xOf(i), y: yOf(Math.max(0, m.revenue)), m }));
-  const done = pts.slice(0, -1);       // finished months: solid line
-  const last2 = pts.slice(-2);         // current month: dashed, it's still in progress
+  const done = endsThisMonth ? pts.slice(0, -1) : pts;
   const solid = done.length >= 2 ? smoothPath(done, zeroY) : '';
   const area = done.length >= 2 ? `${solid} L ${done[done.length - 1].x},${zeroY} L ${done[0].x},${zeroY} Z` : '';
-  const dashed = last2.length === 2 ? smoothPath(last2, zeroY) : '';
+  const dashed = endsThisMonth && pts.length >= 2 ? smoothPath(pts.slice(-2), zeroY) : '';
 
-  // Profit bars from the zero line (downwards, in red, for a loss month).
   const bars = monthly.map((m, i) => {
     const cx = xOf(i);
-    const isCur = i === n - 1;
-    const label = `${monthShortLabel(m.year, m.month0)}: ${money(m.profit)} profit`;
+    const faded = endsThisMonth && i === n - 1;
     if (m.profit >= 0) {
-      const top = yOf(m.profit);
-      return `<path d="${roundedTopRect(cx - barW / 2, top, barW, zeroY, 3)}" fill="url(#earnBar)"${isCur ? ' opacity="0.6"' : ''}><title>${label}</title></path>`;
+      return `<path d="${roundedTopRect(cx - barW / 2, yOf(m.profit), barW, zeroY, 3)}" fill="url(#earnBar)"${faded ? ' opacity="0.6"' : ''}/>`;
     }
-    const h = yOf(m.profit) - zeroY;
-    return `<rect x="${cx - barW / 2}" y="${zeroY}" width="${barW}" height="${h}" rx="2" fill="#f4a3a3"><title>${label}</title></rect>`;
+    return `<rect x="${cx - barW / 2}" y="${zeroY}" width="${barW}" height="${yOf(m.profit) - zeroY}" rx="2" fill="#f4a3a3"/>`;
   }).join('');
 
   const blues = ['#38bdf8', '#2f9cf4', '#2a7ff0', '#2563eb', '#4a5cee', '#5a5ff0'];
-  const dots = pts.map(({ x, y, m }, i) => {
-    const label = `${monthShortLabel(m.year, m.month0)}: ${money(m.revenue)} revenue`;
-    if (i === n - 1) {
-      return `<circle cx="${x}" cy="${y}" r="12" fill="${EARN.indigo}" opacity="0.14"/><circle cx="${x}" cy="${y}" r="6" fill="${EARN.indigo}"><title>${label} (so far)</title></circle>`;
+  const dots = pts.map(({ x, y }, i) => {
+    const picked = i === selIdx;
+    if (endsThisMonth && i === n - 1) {
+      return `<circle cx="${x}" cy="${y}" r="${picked ? 13 : 11}" fill="${EARN.indigo}" opacity="0.14"/><circle cx="${x}" cy="${y}" r="6" fill="${EARN.indigo}"/>`;
     }
     const c = blues[Math.min(blues.length - 1, Math.floor((i / Math.max(1, n - 1)) * blues.length))];
-    return `<circle cx="${x}" cy="${y}" r="${n > 8 ? 3 : 4}" fill="#fff" stroke="${c}" stroke-width="2.5"><title>${label}</title></circle>`;
+    return picked
+      ? `<circle cx="${x}" cy="${y}" r="11" fill="${EARN.blue}" opacity="0.14"/><circle cx="${x}" cy="${y}" r="5.5" fill="${EARN.blue}" stroke="#fff" stroke-width="2"/>`
+      : `<circle cx="${x}" cy="${y}" r="4" fill="#fff" stroke="${c}" stroke-width="2.5"/>`;
   }).join('');
 
-  // Callout on the best month so far.
-  let best = 0;
-  pts.forEach((p, i) => { if (p.m.revenue > pts[best].m.revenue) best = i; });
-  const bp = pts[best];
-  const calloutText = `${monthShortLabel(bp.m.year, bp.m.month0)} · ${money(bp.m.revenue)}`;
-  const cw = Math.max(96, calloutText.length * 6.4 + 20);
-  const cx = Math.min(W - padR - cw, Math.max(padL, bp.x - cw / 2));
-  const callout = bp.m.revenue > 0 ? `
-    <g><rect x="${cx}" y="${Math.max(2, bp.y - 34)}" width="${cw}" height="24" rx="6" fill="${EARN.ink}"/>
-    <text x="${cx + cw / 2}" y="${Math.max(2, bp.y - 34) + 16}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${calloutText}</text></g>` : '';
+  const labels = monthly.map((m, i) => `<text x="${xOf(i)}" y="${H - 10}" text-anchor="middle" font-size="11" ${i === selIdx ? `font-weight="800" fill="${EARN.ink}"` : `fill="${EARN.muted}"`}>${monthShortLabel(m.year, m.month0)}</text>`).join('');
 
-  const every = n > 8 ? 2 : 1;
-  const labels = monthly.map((m, i) => {
-    const isCur = i === n - 1;
-    if (!isCur && (n - 1 - i) % every) return '';
-    return `<text x="${xOf(i)}" y="${H - 10}" text-anchor="middle" font-size="11" ${isCur ? `font-weight="800" fill="${EARN.ink}"` : `fill="${EARN.muted}"`}>${monthShortLabel(m.year, m.month0)}</text>`;
+  // One hoverable / clickable column per month: a transparent hit area the
+  // full height of the plot, a guide line, and a tooltip card that fades in
+  // on hover (CSS in modernist.css). Clicking picks that month.
+  const TW = 150, TH = 84;
+  const cols = monthly.map((m, i) => {
+    const x = xOf(i);
+    const p = pts[i];
+    const tx = Math.min(W - padR - TW, Math.max(padL, x - TW / 2));
+    const ty = Math.max(2, Math.min(p.y - TH - 14, zeroY - TH - 8));
+    const name = `${LONG_MONTHS[m.month0]} ${m.year}`;
+    const running = endsThisMonth && i === n - 1;
+    const row = (y, label, value, colour) => `<text x="${tx + 12}" y="${y}" font-size="11" fill="#c7cde3">${label}</text><text x="${tx + TW - 12}" y="${y}" text-anchor="end" font-size="11" font-weight="800" fill="${colour}">${value}</text>`;
+    return `
+      <g class="earn-col${i === selIdx ? ' is-picked' : ''}" data-act="earn-pick" data-key="${monthKey(m)}" tabindex="0" role="button" aria-label="${name}: ${money(m.revenue)} revenue, ${money(m.profit)} profit. Click to show this month.">
+        <rect class="earn-hit" x="${padL + bandW * i}" y="${padTop - 10}" width="${bandW}" height="${H - padTop - padBottom + 22}" rx="8" fill="rgba(29,78,216,0.035)" fill-opacity="${i === selIdx ? 1 : 0}"/>
+        <line class="earn-guide" x1="${x}" y1="${padTop - 6}" x2="${x}" y2="${zeroY}" stroke="${EARN.blue}" stroke-opacity="0.35" stroke-dasharray="3 3"/>
+        <g class="earn-hover">
+          <rect x="${tx}" y="${ty}" width="${TW}" height="${TH}" rx="9" fill="${EARN.ink}"/>
+          <text x="${tx + 12}" y="${ty + 20}" font-size="12" font-weight="800" fill="#fff">${name}${running ? ' · so far' : ''}</text>
+          ${row(ty + 40, 'Revenue', money(m.revenue), '#93c5fd')}
+          ${row(ty + 56, 'Profit', money(m.profit), m.profit < 0 ? '#fca5a5' : '#c4b5fd')}
+          ${row(ty + 72, `${m.jobs} job${m.jobs === 1 ? '' : 's'}`, hours(m.hours), '#e2e8f0')}
+        </g>
+      </g>`;
   }).join('');
 
   const legend = `
-    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:${EARN.muted};margin-top:4px">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:11px;color:${EARN.muted};margin-top:4px">
       <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:3px;border-radius:2px;background:linear-gradient(90deg,${EARN.sky},${EARN.blue},${EARN.indigo})"></span>Revenue</span>
       <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:linear-gradient(0deg,#7dd3fc,#a5b4fc)"></span>Profit</span>
-      <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;border-top:3px dashed ${EARN.indigo}"></span>This month, so far</span>
+      ${endsThisMonth ? `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;border-top:3px dashed ${EARN.indigo}"></span>This month, so far</span>` : ''}
+      <span style="margin-left:auto">Hover a month for details · click to show it</span>
     </div>`;
 
   const tableRows = monthly.map((m) => `<tr><td>${monthShortLabel(m.year, m.month0)} ${m.year}</td><td>${money(m.revenue)}</td><td>${money(m.profit)}</td></tr>`).join('');
   const visuallyHidden = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
 
   return `
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;font-family:var(--font-heading)" role="img" aria-label="Monthly revenue as a line and profit as bars for the last ${n} months">
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;font-family:var(--font-heading);overflow:visible" role="img" aria-label="Monthly revenue as a line and profit as bars">
       <defs>
         <linearGradient id="earnLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${EARN.sky}"/><stop offset="0.55" stop-color="${EARN.blue}"/><stop offset="1" stop-color="${EARN.indigo}"/></linearGradient>
         <linearGradient id="earnFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity="0.2"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient>
@@ -276,8 +316,8 @@ function earningsChart(monthly) {
       ${dashed ? `<path d="${dashed}" fill="none" stroke="${EARN.indigo}" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round"/>` : ''}
       ${bars}
       ${dots}
-      ${callout}
       ${labels}
+      ${cols}
     </svg>
     ${legend}
     <table style="${visuallyHidden}"><caption>Monthly revenue and profit</caption><thead><tr><th>Month</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>${tableRows}</tbody></table>`;

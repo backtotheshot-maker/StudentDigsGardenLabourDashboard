@@ -251,7 +251,13 @@ The Home tab's earnings card (design "A2" from the drafts):
   current month dashed because it isn't finished. The best month gets a
   label; hover any point or bar for the exact figure. A loss month shows its
   profit bar in red, below £0.
-- **3M / 6M / 12M** buttons switch how many months are shown.
+- **Hover any month** on the chart for a card with its revenue, profit,
+  number of jobs and hours.
+- **Click a month** to make it the headline: the big profit number, revenue,
+  % kept, jobs and hours all switch to that month, and the pill compares it
+  with the month before. Click it again (or "Back to this month") to return.
+- **‹ › arrows** move the 6-month window back and forward in time, so you
+  can look at any past month.
 
 The blues are deliberately local to this card (the `EARN` colours at the
 top of its code in `home.js`) — the rest of the dashboard keeps its green
